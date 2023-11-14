@@ -1,0 +1,33 @@
+// .cmds:${ROOT}/4_customers/__DEMO__/DEMO.BASIC.ocli
+
+///////////////
+// Templates //
+///////////////
+
+// Rooms
+.template:${ROOMS}/room-square1.json
+.template:${ROOMS}/demo-alpha-room.json
+
+// Devices
+// .template:${ROOT}/demo/modeles/ibm-ns1200.json
+// .template:${ROOT}/demo/modeles/ibm-nx360m5.json
+// .template:${ROOT}/demo/modeles/intel-xeon-e5-2697v3.json
+
+///////////////////
+// OGrEE objects //
+///////////////////
+
+//si BASIC
++si:/P/BASIC
+    /P/BASIC:usableColor=5BDCFF
+    /P/BASIC:reservedColor=AAAAAA
+    /P/BASIC:technicalColor=D0FF78
+
+//bd A
++bd:/P/BASIC/A@[0,0]@0@[24,30,1]
+
+//ro R1 with template
++ro:/P/BASIC/A/R1@[0,0]@0@room-square1
+
+//rack
++rk:/P/BASIC/A/R1/RACK1@[2,2]@t@[0,0,0]@[60,120,42]

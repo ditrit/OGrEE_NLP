@@ -1,0 +1,22 @@
+{ 
+    "slug"        : "intel-xeon-e5-2697v3",
+    "description" : "Intel Xeon E5 2697 v3 - 2.6GHz",
+    "category"    : "device",
+    "sizeWDHmm"   : [97 ,97 ,30],
+    "fbxModel"    : "",
+    "attributes"  : {
+        "type"        : "processor",
+        "vendor"      : "INTEL",
+        "model"       : "E5 2697 v3",
+        "socket"      : "FCLGA2011-3",
+        "nbcore"      : "14",
+        "baseFreq"    : "2.6",
+        "turboFreq"   : "3.6",
+        "memType"     : "DDR4",
+        "memFreq"     : "[1600,1866,2133]",
+        "TDP"         : "145"
+    },
+    "colors"     : [],
+    "components" : [],
+    "slots"      : []
+}

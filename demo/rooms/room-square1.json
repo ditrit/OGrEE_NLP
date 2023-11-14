@@ -1,0 +1,19 @@
+{ 
+    "slug"          : "room-square1",
+    "category"      : "room",
+    "axisOrientation" : "+x+y",
+    "sizeWDHm"      : [12,30,3],
+    "floorUnit"     : "t",
+    "technicalArea" : [1,1,1,1],
+    "reservedArea"  : [2,2,2,2],
+    "separators"    : {
+        "sep1" : { "startPosXYm" : [0,15],  "endPosXYm": [12,15], "type" :  "plain" },
+        "sep2" : { "startPosXYm" : [1.8,0],  "endPosXYm": [1.8,15], "type" :  "wireframe" }
+
+    },
+    "pillars"       : {},
+    "colors"        : [],
+    "tiles"         : [],
+    "rows"          : []
+}
+   

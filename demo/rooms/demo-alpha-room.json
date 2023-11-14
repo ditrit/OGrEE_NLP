@@ -1,0 +1,63 @@
+{ 
+    "slug"          : "demo-alpha-room",
+	"category"      : "room",
+    "axisOrientation" : "+x+y",
+    "sizeWDHm"      : [22.8,19.8,3],
+	"floorUnit"     : "t",
+    "technicalArea" : [3,3,1,1],
+    "reservedArea"  : [2,1,5,2],
+    "separators"    : {
+		"sep1": {"startPosXYm" : [3,3],       "endPosXYm": [3,12],  "type" : "wireframe" },
+		"sep2": {"startPosXYm" : [15.4,15.4], "endPosXYm": [10,12], "type" : "wireframe" }
+	},
+	"colors"        : [
+		{ "name" : "lightBlue", "value" : "5BDCFF"},
+		{ "name" : "spe",       "value" : "AC42DC"},
+		{ "name" : "grey",      "value" : "424242"}
+	],
+    "tiles"         : [ 
+		{ "location" : "-1/-1", "name" : "neg1", "label" : "-1/3\nneg1", "texture" : "",       "color" : "@grey",      "comment" : "neg test" },
+		{ "location" : "1/3",   "name" : "A",    "label" : "1/3\nA",     "texture" : "",       "color" : "@lightBlue", "comment" : "classic"  },
+		{ "location" : "2/3",   "name" : "B",    "label" : "2/3\nB",     "texture" : "",       "color" : "@lightBlue", "comment" : ""         },
+		{ "location" : "3/3",   "name" : "C",    "label" : "3/3\nC",     "texture" : "",       "color" : "@lightBlue", "comment" : ""         },
+		{ "location" : "4/3",   "name" : "D",    "label" : "4/3\nD",     "texture" : "perf22", "color" : "",           "comment" : ""         },
+		{ "location" : "5/3",   "name" : "E",    "label" : "5/3\nE",     "texture" : "perf22", "color" : "4242ff",     "comment" : ""         },
+		{ "location" : "6/3",   "name" : "F",    "label" : "6/3\nF",     "texture" : "",       "color" : "",           "comment" : ""         },
+		{ "location" : "7/3",   "name" : "G",    "label" : "7/3\nG",     "texture" : "perf29", "color" : "",           "comment" : ""         },
+		{ "location" : "8/3",   "name" : "H",    "label" : "8/3\nH",     "texture" : "perf29", "color" : "",           "comment" : ""         },
+		{ "location" : "9/3",   "name" : "I",    "label" : "9/3\nI",     "texture" : "kirk",   "color"  : "",          "comment" : ""         },
+		{ "location" : "10/3",  "name" : "J",    "label" : "10/3\nJ",    "texture" : "chybz",  "color" : "EE82EE",     "comment" : ""         },
+		{ "location" : "11/3",  "name" : "K",    "label" : "11/3\nK",    "texture" : "lbm",    "color" : "",           "comment" : ""         },
+		{ "location" : "12/3",  "name" : "L",    "label" : "12/3\nL",    "texture" : "",       "color" : "",           "comment" : ""         },
+		{ "location" : "13/3",  "name" : "M",    "label" : "13/3\nM",    "texture" : "",       "color" : "",           "comment" : ""         },
+		{ "location" : "14/3",  "name" : "N",    "label" : "14/3\nN",    "texture" : "",       "color" : "",           "comment" : ""         },
+		{ "location" : "15/3",  "name" : "O",    "label" : "15/3\nO",    "texture" : "",       "color" : "",           "comment" : ""         },
+		{ "location" : "16/3",  "name" : "P",    "label" : "16/3\nP",    "texture" : "",       "color" : "",           "comment" : ""         },
+		{ "location" : "17/3",  "name" : "Q",    "label" : "17/3\nQ",    "texture" : "",       "color" : "",           "comment" : ""         },
+		{ "location" : "18/3",  "name" : "R",    "label" : "18/3\nR",    "texture" : "",       "color" : "",           "comment" : ""         },
+		{ "location" : "19/3",  "name" : "S",    "label" : "19/3\nS",    "texture" : "",       "color" : "",           "comment" : ""         },
+		{ "location" : "20/3",  "name" : "T",    "label" : "20/3\nT",    "texture" : "",       "color" : "",           "comment" : ""         },
+		{ "location" : "21/3",  "name" : "U",    "label" : "21/3\nU",    "texture" : "",       "color" : "",           "comment" : ""         },
+		{ "location" : "22/3",  "name" : "V",    "label" : "22/3\nV",    "texture" : "",       "color" : "",           "comment" : ""         },
+		{ "location" : "23/3",  "name" : "W",    "label" : "23/3\nW",    "texture" : "",       "color" : "",           "comment" : ""         },
+		{ "location" : "24/3",  "name" : "X",    "label" : "24/3\nX",    "texture" : "",       "color" : "",           "comment" : ""         },
+		{ "location" : "25/3",  "name" : "Y",    "label" : "25/3\nY",    "texture" : "",       "color" : "",           "comment" : ""         },
+		{ "location" : "26/3",  "name" : "Z",    "label" : "26/3\nZ",    "texture" : "",       "color" : "",           "comment" : ""         },
+		{ "location" : "27/-1", "name" : "",     "label" : "HA",         "texture" : "",       "color" : "@spe",       "comment" : ""         },
+		{ "location" : "27/0",  "name" : "",     "label" : "HA",         "texture" : "",       "color" : "@spe",       "comment" : ""         },
+		{ "location" : "27/1",  "name" : "",     "label" : "HA",         "texture" : "",       "color" : "@spe",       "comment" : ""         },
+		{ "location" : "27/3",  "name" : "AA",   "label" : "26/3\nAA",   "texture" : "",       "color" : "@spe",       "comment" : "test spe" },
+		{ "location" : "28/-1", "name" : "",     "label" : "HA",         "texture" : "",       "color" : "@spe",       "comment" : ""         },
+		{ "location" : "28/1",  "name" : "",     "label" : "HA",         "texture" : "",       "color" : "@spe",       "comment" : ""         },
+		{ "location" : "28/3",  "name" : "AB",   "label" : "26/3\nAB",   "texture" : "",       "color" : "@spe",       "comment" : "test spe" },
+		{ "location" : "29/-1", "name" : "",     "label" : "HA",         "texture" : "",       "color" : "@spe",       "comment" : ""         },
+		{ "location" : "29/1",  "name" : "",     "label" : "HA",         "texture" : "",       "color" : "@spe",       "comment" : ""         },
+		{ "location" : "29/0",  "name" : "",     "label" : "HA",         "texture" : "",       "color" : "@spe",       "comment" : ""         },
+		{ "location" : "29/3",  "name" : "AC",   "label" : "26/3\nAC",   "texture" : "",       "color" : "@spe",       "comment" : "test spe" }
+	],
+    "aisles"        : [
+		{ "name" : "A", "locationY" :  1, "orientation" : "rear"  },
+        { "name" : "B", "locationY" :  9, "orientation" : "front"  }
+	]
+}
+   
