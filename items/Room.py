@@ -1,7 +1,8 @@
 import re
 from Component import Component
-from Items.Pillar import Pillar
-
+from Pillar import Pillar
+from Group import Group
+from Rack import Rack
 
 class Room :
     def __init__(self, name : str, position : list, rotation, size : list = None, axisOrientation : str = None, floorUnit : str = None, template : str = None, *components : Component):
@@ -38,6 +39,7 @@ class Room :
         return boolean
     def addPillar(self, name : str, center : list, size : list, rotation : int) -> None:
         self.components.append(Pillar(name,center,size,rotation))
+    
     def getPillar(self, name : str) -> Pillar:
         """Returns a Pillar instance from a Room thanks to its name. A ValueError is raised if there is no pillar with such name."""
         k = 0
@@ -46,3 +48,12 @@ class Room :
             k += 1
         if k == n + 1:
             raise ValueError("The pillar does not exist.")
+    
+    #This method create a group of rack
+    def createGroup(self, name : str, *comp : Rack):
+        if len(comp) !=0 : 
+            group = Group(self.name + "." + name)
+            for compo in comp:
+               group.addComponent(compo)
+            self.components.append(group)
+        

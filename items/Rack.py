@@ -1,13 +1,21 @@
-class Rack:
+from Component import Component
+from Group import Group
+
+class Rack(Component):
     rotation_possible = {"LEFT" : [0,90,0], "RIGHT": [0,-90,0], "FRONT" : [0,0,180], "REAR": [0,0,0] , "TOP": [90,0,0],
     "BOTTOM": [-90,0,0]}
 
-    def __init__(self, position : list, unit : str, rack_rotation : str | list, size : list = None, template : str = None):
+    def __init__(self, name : str, position : list, unit : str, rack_rotation : str | list, size : list = None, template : str = None, *components : Component):
+        self.name = name
         self.position = position
         self.unit = unit
-        self.rack_rotation = rack_rotation
+        if rack_rotation !=None and type(rack_rotation) ==str:
+            self.rack_rotation = rack_rotation.upper()
+        else :
+            self.rack_rotation = rack_rotation
         self.size = size
         self.template = template
+        self.components = components
     
     def isConform(self):
         boolean = True
@@ -15,6 +23,9 @@ class Rack:
         #We verify that we have at least 2 coordinate in position
         boolean = boolean and (len(self.position) ==2 or len(self.position) ==3)
         
+        #We check the unit. It should be m, t or f
+        boolean = boolean and (self.unit.replace(" ","").lower() in ["t","f","m"])
+
         #We verify that each coordinate are a float or an int
         for coor in self.position:
             boolean = boolean and (type(coor) in [float,int])
@@ -42,3 +53,10 @@ class Rack:
         
         return boolean
 
+    #This method create a group which contains all the components in comp
+    def createGroup(self,name : str, *comp: Component):
+        #TO DO : ADD if type(comp[0]) == Device
+        group = Group(self.name + "." + name)
+        for compo in comp:
+            group.addComponent(compo)
+        self.components.append(group)
