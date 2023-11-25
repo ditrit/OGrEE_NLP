@@ -1,5 +1,6 @@
 from Component import Component
 from Group import Group
+from Device import Device
 
 class Rack(Component):
     rotation_possible = {"LEFT" : [0,90,0], "RIGHT": [0,-90,0], "FRONT" : [0,0,180], "REAR": [0,0,0] , "TOP": [90,0,0],
@@ -55,8 +56,10 @@ class Rack(Component):
 
     #This method create a group which contains all the components in comp
     def createGroup(self,name : str, *comp: Component):
-        #TO DO : ADD if type(comp[0]) == Device
-        group = Group(self.name + "." + name)
-        for compo in comp:
-            group.addComponent(compo)
-        self.components.append(group)
+        if type(comp[0]) != Device:
+            pass
+        else:
+            group = Group(self.name + "." + name)
+            for compo in comp:
+                group.addComponent(compo)
+                self.components.append(group)
