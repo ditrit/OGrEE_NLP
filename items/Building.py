@@ -1,5 +1,6 @@
 from Room import Room
 from Component import Component
+from tools import isListOfNumbers
 
 class Building :
     def __init__(self, name : str, position : list, rotation, size : list, template : str, rooms : list[Room] = []) :
@@ -9,24 +10,18 @@ class Building :
         self.size = size
         self.template = template
         self.rooms = rooms
-
-    def isListOfNumbers(self, lst : list) -> bool:
-        n = len(lst)
-        k = 0
-        verified = True
-        while verified and k < n:
-            verified = verified and (type(lst[k]) in [float, int])
-            k += 1
-        return verified
     
     def positionConform(self, testPosition : list) -> bool:
-        return len(testPosition) == 2 and self.isListOfNumbers(testPosition)
+        return len(testPosition) == 2 and isListOfNumbers(testPosition)
     
     def rotationConform(self, testRotation : float) -> bool:
         return type(testRotation) in [float,int]
     
     def sizeConform(self, testSize : list) -> bool:
-        return len(testSize) == 3 and self.isListOfNumbers(testSize)
+        return len(testSize) == 3 and isListOfNumbers(testSize)
+    
+    def templateConform(self, testTemplate : str) -> bool:
+        return type(testTemplate) == str
 
     def isConform(self) :
         boolean = True
@@ -36,6 +31,7 @@ class Building :
         boolean = boolean and self.positionConform(self.position)
         boolean = boolean and self.rotationConform(self.rotation)
         boolean = boolean and self.sizeConform(self.size)
+        boolean = boolean and self.templateConform(self.template)
         return boolean
         # TODO : check template -> if not all optional parameters should be verified
 
@@ -88,7 +84,20 @@ class Building :
             self.position = newPosition
         else:
             raise ValueError("The position format is invalid.")
-        
+     
+    def setRotation(self, newRotation : float) -> None:
+        """This sets a new rotation for the building"""
+        if self.rotationConform(newRotation):
+            self.rotation = newRotation
+        else:
+            raise ValueError("The rotation format is invalid.")
+    
+    def setSize(self, newSize: list) -> None:
+        """This sets a new size for the building"""
+        if self.conform(newSize):
+            self.size = newSize
+        else:
+            raise ValueError("The size format is invalid.")
 
     def removeRoom(self, name : str) -> None:
         """Removes a Room instance from the building thanks to its name. A ValueError is raised if there is no room with such name.

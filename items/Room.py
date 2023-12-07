@@ -1,10 +1,11 @@
 import re
+
 from Component import Component
-
 from Pillar import Pillar
-
 from Group import Group
 from Rack import Rack
+
+from tools import isListOfNumbers
 
 
 class Room :
@@ -12,37 +13,55 @@ class Room :
         self.name = name.replace(" ","")
         self.position = position
         self.rotation = rotation%360
-        self.template = template
         self.size = size
         self.axisOrientation = axisOrientation
         self.floorUnit = floorUnit
+        self.template = template
         self.components = components
+    
+    def positionConform(self, testPosition : list) -> bool:
+        return len(testPosition) == 2 and isListOfNumbers(testPosition)
+    
+    def rotationConform(self, testRotation : float) -> bool:
+        return type(testRotation) in [float,int]
+    
+    def sizeConform(self, testSize : list) -> bool:
+        return len(testSize) == 3 and isListOfNumbers(testSize)
+    
+    def axisOrientationConform(self, testAxis : str) -> bool:
+        return re.search("[+-]x[+-]y", self.axisOrientation.replace(" ","")) == None
+    
+    def floorUnitConform(self, testFloorUnit : str) -> bool:
+        return self.floorUnit.replace(" ","") in ["t","f","m"]
+    
+    def templateConform(self, testTemplate : str) -> bool:
+        return type(testTemplate) == str
+    
 
     def isConform(self) : # TODO : complete template or not
         boolean = True
-
-        boolean = boolean and len(self.position) == 2
-        for coord in self.position :
-            boolean = boolean and (type(coord) in [float,int])
-        boolean = boolean and (type(self.rotation) in [float,int])
-        
-        if self.template != None :
-            boolean = boolean and (type(self.template) == str)
+        boolean = boolean and self.positionConform(self.position)
+        boolean = boolean and self.rotationConform(self.rotation)
         if self.size != None :
-            boolean = boolean and (len(self.size) == 3)
-            for value in self.size :
-                boolean = boolean and (type(value) in [float,int])
+            boolean = boolean and self.sizeConform(self.size)
         if self.axisOrientation != None :
-            test = re.search("[+-]x[+-]y", self.axisOrientation.replace(" ",""))
-            if test == None :
-                boolean = False
+            boolean = boolean and self.axisOrientationConform(self.axisOrientation)
         if self.floorUnit != None :
-            boolean = boolean and (self.floorUnit.replace(" ","") in ["t","f","m"])
+            boolean = boolean and self.floorUnitConform(self.floorUnit)
+        if self.template != None:
+            boolean = boolean and self.templateConform(self.template)
 
         return boolean
-    def addPillar(self, name : str, center : list, size : list, rotation : int) -> None:
+    
+    def addComponent(self, component : Component) -> None:
+        if not (component in self.components):
+            self.components.append(component)
+        else:
+            raise Exception("There is already the same component in this room.")
 
-        self.components.append(Pillar(".".join([self.name,name]),center,size,rotation))
+    def addPillar(self, name : str, center : list, size : list, rotation : int) -> None:
+        pillar = Pillar(".".join([self.name,name]),center,size,rotation)
+        self.addComponent(pillar)
         
 
     def getPillar(self, name : str) -> Pillar:
@@ -55,15 +74,13 @@ class Room :
             raise ValueError("The pillar does not exist.")
 
     
-    #This method create a group of rack
+    #This method creates a group of rack
     def createGroup(self, name : str, *comp : Rack):
-        if len(comp) !=0 : 
+        if len(comp) != 0 : 
             group = Group(self.name + "." + name)
             for compo in comp:
                group.addComponent(compo)
             self.components.append(group)
-        
-        return self.components[k]
     
     def getParentName(self, name = "") -> str:
         """This method returns the name of the parent object. It reverses the name, then splits it using dot as separator, and only
@@ -79,4 +96,44 @@ class Room :
             self.name = newName
         else:
             self.name = ".".join([self.getParentName(),newName])
-
+    
+    def setPosition(self, newPosition : list) -> None:
+        """This sets a new position for the room"""
+        if self.positionConform(newPosition):
+            self.position = newPosition
+        else:
+            raise ValueError("The position format is invalid.")
+     
+    def setRotation(self, newRotation : float) -> None:
+        """This sets a new rotation for the room"""
+        if self.rotationConform(newRotation):
+            self.rotation = newRotation
+        else:
+            raise ValueError("The rotation format is invalid.")
+    
+    def setSize(self, newSize: list) -> None:
+        """This sets a new size for the room"""
+        if self.sizeConform(newSize):
+            self.size = newSize
+        else:
+            raise ValueError("The size format is invalid.")
+    def setAxisOrientation(self, newAxisOrientation : str) -> None:
+        """This sets a new axis orientation for the room"""
+        if self.axisOrientationConform(newAxisOrientation):
+            self.axisOrientation = newAxisOrientation
+        else:
+            raise ValueError("The axis orientation format is invalid.")
+     
+    def setFloorUnit(self, newFloorUnit : str) -> None:
+        """This sets a new floor unit for the room"""
+        if self.floorUnitConform(newFloorUnit):
+            self.floorUnit = newFloorUnit
+        else:
+            raise ValueError("The floor unit format is invalid.")
+    
+    def setTemplate(self, newTemplate : str) -> None:
+        """This sets a new template for the room"""
+        if self.templateConform(newTemplate):
+            self.template = newTemplate
+        else:
+            raise ValueError("The template format is invalid")
