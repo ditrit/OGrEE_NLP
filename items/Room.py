@@ -1,11 +1,14 @@
 import re
 from Component import Component
+<<<<<<< Updated upstream
 
 from Pillar import Pillar
 
 from Group import Group
 from Rack import Rack
 
+=======
+>>>>>>> Stashed changes
 
 
 class Room :
