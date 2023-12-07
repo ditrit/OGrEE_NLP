@@ -63,17 +63,23 @@ class Room :
         pillar = Pillar(".".join([self.name,name]),center,size,rotation)
         self.addComponent(pillar)
         
-
-    def getPillar(self, name : str) -> Pillar:
-        """Returns a Pillar instance from a Room thanks to its name. A ValueError is raised if there is no pillar with such name."""
+    def getIndexComponent(self, name : str) -> int:
+        """Returns the index of a Component thanks to its name in the list of components in the room. A ValueError is raised if there
+        is no component with such name."""
         k = 0
         n = len(self.components) - 1
-        while k < n or name != self.components[k].name:
+        if n < 0:
+            raise IndexError("There is no component in this room.")
+        while k < n or (name != self.components[k].name and ".".join([self.name, name]) != self.components[k].name):
             k += 1
         if k == n + 1:
-            raise ValueError("The pillar does not exist.")
+            raise ValueError("The component {} does not exist.".format(name))
+        return k
 
-    
+    def getComponent(self, name : str) -> Component:
+        """Returns a Component instance from a Room thanks to its name. A ValueError is raised if there is no component with such name."""
+        return self.components[self.getIndexComponent(name)]
+
     #This method creates a group of rack
     def createGroup(self, name : str, *comp : Rack):
         if len(comp) != 0 : 
@@ -137,3 +143,8 @@ class Room :
             self.template = newTemplate
         else:
             raise ValueError("The template format is invalid")
+    
+    def removeComponent(self, name : str) -> None:
+        """Removes a Component instance from the room thanks to its name. A ValueError is raised if there is no component with such name.
+        This operation is final and means that the Component instance is permanently deleted."""
+        del self.components[self.getIndexComponent(name)]
