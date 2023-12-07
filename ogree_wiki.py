@@ -90,7 +90,7 @@ def conformityParameter(element : str, parameter : str, entry) :
 def conformityList(dictio_conformity : dict, entry_list) :
     boolean = True
     boolean = boolean and (len(entry_list) == dictio_conformity["len"])
-    for entry in entry_list : 
+    for entry in entry_list: 
         boolean = boolean and (type(entry) in dictio_conformity["type_value"])
     return boolean
 
@@ -98,7 +98,7 @@ class Site :
     def __init__(self, name : str) :
         self.name = name
 
-    def makeCLI(self) :
+    def makeCLI(self):
         return str(self.name)
 
 class Building :
