@@ -9,9 +9,6 @@ class Site :
     def makeCLI(self) -> str:
         return str(self.name)
     
-    def isSite(self):
-        return type(self) == Site
-    
     def getParentName(self, name = "") -> str:
         """This method returns the name of the parent object. It reverses the name, then splits it using dot as separator, and only
         gets the first part of the name, which is put back in order."""

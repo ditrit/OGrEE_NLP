@@ -15,23 +15,31 @@ class Building :
         k = 0
         verified = True
         while verified and k < n:
-            verified = verified and lst[]
-            
+            verified = verified and (type(lst[k]) in [float, int])
+            k += 1
+        return verified
+    
+    def positionConform(self, testPosition : list) -> bool:
+        return len(testPosition) == 2 and self.isListOfNumbers(testPosition)
+    
+    def rotationConform(self, testRotation : float) -> bool:
+        return type(testRotation) in [float,int]
+    
+    def sizeConform(self, testSize : list) -> bool:
+        return len(testSize) == 3 and self.isListOfNumbers(testSize)
 
     def isConform(self) :
         boolean = True
         attributes_list = [self.name, self.position, self.rotation]
         if None in attributes_list :
             raise Exception("Missing argument",["name","position","rotation"][attributes_list.index(None)])
-        boolean = boolean and len(self.position) == 2
-        for coord in self.position :
-            boolean = boolean and (type(coord) in [float,int])
-        boolean = boolean and (type(self.rotation) in [float,int])
-        for coord in self.size :
-            boolean = boolean and (type(coord) in [float,int])
+        boolean = boolean and self.positionConform(self.position)
+        boolean = boolean and self.rotationConform(self.rotation)
+        boolean = boolean and self.sizeConform(self.size)
         return boolean
         # TODO : check template -> if not all optional parameters should be verified
-    def makeCLI(self) :
+
+    def makeCLI(self):
         string = ""
         parameters_string = [self.name, str(self.position), str(self.rotation)]
         string += "@".join(parameters_string)
@@ -76,7 +84,11 @@ class Building :
     
     def setPosition(self, newPosition : list) -> None:
         """This sets a new position for the building"""
-        if (len(newPosition) == 2 and )
+        if self.positionConform(newPosition):
+            self.position = newPosition
+        else:
+            raise ValueError("The position format is invalid.")
+        
 
     def removeRoom(self, name : str) -> None:
         """Removes a Room instance from the building thanks to its name. A ValueError is raised if there is no room with such name.
