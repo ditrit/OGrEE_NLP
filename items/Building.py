@@ -10,6 +10,14 @@ class Building :
         self.template = template
         self.rooms = rooms
 
+    def isListOfNumbers(self, lst : list) -> bool:
+        n = len(lst)
+        k = 0
+        verified = True
+        while verified and k < n:
+            verified = verified and lst[]
+            
+
     def isConform(self) :
         boolean = True
         attributes_list = [self.name, self.position, self.rotation]
@@ -50,7 +58,26 @@ class Building :
     def getRoom(self,name : str) -> Room:
         """Returns a Room instance from the building thanks to its name. A ValueError is raised if there is no room with such name."""
         return self.rooms[self.getIndexRoom(name)]
+
+    def getParentName(self, name = "") -> str:
+        """This method returns the name of the parent object. It reverses the name, then splits it using dot as separator, and only
+        gets the first part of the name, which is put back in order."""
+        if (name == ""):
+            name = self.name
+        return "".join(reversed(name)).split(".",1)[-1][::-1]    
+
+    def setName(self, newName : str) -> None:
+        """If it is a complete new name, with the same parent name, then it is set as the new name. If the parent name is not the same,
+        it is added to keep it coherent."""
+        if (self.getParentName(newName) == self.getParentName()):
+            self.name = newName
+        else:
+            self.name = ".".join([self.getParentName(),newName])
     
+    def setPosition(self, newPosition : list) -> None:
+        """This sets a new position for the building"""
+        if (len(newPosition) == 2 and )
+
     def removeRoom(self, name : str) -> None:
         """Removes a Room instance from the building thanks to its name. A ValueError is raised if there is no room with such name.
         This operation is final and means that the Room instance is permanently deleted."""

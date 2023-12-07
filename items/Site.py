@@ -9,6 +9,19 @@ class Site :
     def makeCLI(self) -> str:
         return str(self.name)
     
+    def isSite(self):
+        return type(self) == Site
+    
+    def getParentName(self, name = "") -> str:
+        """This method returns the name of the parent object. It reverses the name, then splits it using dot as separator, and only
+        gets the first part of the name, which is put back in order."""
+        if (name == ""):
+            name = self.name
+        return "".join(reversed(name)).split(".",1)[-1][::-1]
+    
+    def setName(self, newName : str) -> None:
+        self.name = newName
+    
     def addBuilding(self, name : str, position : list, rotation, size : list, template : str, rooms : list[Room] = []) -> None:
         """Adds a Building instance with specified parameters to the site."""
         self.buildings.append(Building(".".join([self.name,name]), position, rotation, size, template, rooms))
@@ -26,7 +39,7 @@ class Site :
             raise ValueError("The building {} does not exist.".format(name))
         return k
 
-    def getBuilding(self,name : str) -> Building:
+    def getBuilding(self, name : str) -> Building:
         """Returns a Building instance from the site thanks to its name. A ValueError is raised if there is no building with such name."""
         return self.buildings[self.getIndexBuilding(name)]
     
