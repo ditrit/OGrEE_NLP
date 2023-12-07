@@ -1,7 +1,11 @@
 import re
 from Component import Component
+<<<<<<< Updated upstream
 from Pillar import Pillar
 
+=======
+from items.Pillar import Pillar
+>>>>>>> Stashed changes
 
 
 class Room :
