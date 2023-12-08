@@ -198,7 +198,7 @@ class Rack:
                 boolean = boolean and len(self.size) ==3
                 #Each elements of size should be an int or a float
                 for elem in self.size:
-                  boolean = boolean and type(elem) in [float, int]
+                    boolean = boolean and type(elem) in [float, int]
             
             #A rack can have a template
             if(self.template !=None):
