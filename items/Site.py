@@ -1,13 +1,14 @@
 from Building import Building
 from Room import Room
+from tools import isHexColor,isOrientation, isListOfNumbers
 
 class Site :
-    def __init__(self, name : str, buildings : list[Building] = []) :
+    def __init__(self, name : str, orientation : str = "") :
         self.name = name
-        self.buildings = buildings
+        self.orientation = orientation
         
-    def makeCLI(self) -> str:
-        return str(self.name)
+    def createCLI(self) -> str:
+        return "+si:{}".format(self.name)
     
     def getParentName(self, name = "") -> str:
         """This method returns the name of the parent object. It reverses the name, then splits it using dot as separator, and only
@@ -16,12 +17,52 @@ class Site :
             name = self.name
         return "".join(reversed(name)).split("/",1)[-1][::-1]
     
-    def setName(self, newName : str) -> None:
+    def setName(self, newName : str) -> str:
         self.name = newName
+        return "{}:name={}".format(self.name, newName)
     
-    def addBuilding(self, name : str, position : list, rotation, size : list, template : str, rooms : list[Room] = []) -> None:
-        """Adds a Building instance with specified parameters to the site."""
-        self.buildings.append(Building("/".join([self.name,name]), position, rotation, size, template, rooms))
+    def setOrientation(self, newOrientation : str) -> str:
+        if not isOrientation(newOrientation):
+            raise ValueError("The orientation is invalid")
+        self.orientation = newOrientation
+        return "{}:orientation={}".format(self.orientation, newOrientation)
+    
+    def setDescription(self, description : str):
+        return self.name + ":description={}".format(description)
+
+    def setAdress(self, adress : str):
+        return self.name + ":adress={}".format(adress)
+
+    def setZipcode(self, zipcode : int):
+        if len(zipcode) != 5:
+            raise ValueError("The zipcode is invalid")
+        return self.name + ":zipcode={}".format(zipcode)
+
+    def setCity(self, city : str):
+        return self.name + ":city={}".format(city)
+
+    def setCountry(self, country : str):
+        return self.name + ":country={}".format(country)
+    
+    def setGPS(self, gps : list):
+        if len(gps) != 3 and not isListOfNumbers(gps):
+            raise ValueError("The gps coordinates are invalid")
+        return self.name + ":gps={}".format(gps)
+    
+    def setUsableColor(self, color : str) -> str:
+        if not isHexColor(color):
+            raise ValueError("The color format is invalid")
+        return self.name + ":usableColor={}".format(color)
+    
+    def setReservedColor(self, color : str) -> str:
+        if not isHexColor(color):
+            raise ValueError("The color format is invalid")
+        return self.name + ":reservedColor={}".format(color)
+    
+    def setTechnicalColor(self, color : str) -> str:
+        if not isHexColor(color):
+            raise ValueError("The color format is invalid")
+        return self.name + ":technicalColor={}".format(color)
     
     def getIndexBuilding(self, name : str) -> int:
         """Returns the index of a Building thanks to its name in the list of buildings located on the site. A ValueError is raised if there
@@ -46,11 +87,4 @@ class Site :
         del self.buildings[self.getIndexBuilding(name)]
         
 if __name__ == "__main__":
-    site = Site("S1")
-    site.addBuilding("B1", [2,5], 0, [8,9,2], "")
-    print(site.buildings)
-    print(site.getBuilding("S1.B1"))
-    print(site.getBuilding("B1"))
-    site.removeBuilding("S1.B1")
-    print(site.buildings)
-    print(site.getBuilding("S1.B1"))
+    pass

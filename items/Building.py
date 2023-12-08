@@ -3,13 +3,11 @@ from Component import Component
 from tools import isListOfNumbers
 
 class Building :
-    def __init__(self, name : str, position : list, rotation, size : list, template : str, rooms : list[Room] = []) :
+    def __init__(self, name : str, position : list, rotation : int, size : list) :
         self.name = name.replace(" ","")
         self.position = position
         self.rotation = rotation%360 if rotation != None else 0
         self.size = size
-        self.template = template
-        self.rooms = rooms
     
     def positionConform(self, testPosition : list) -> bool:
         return len(testPosition) == 2 and isListOfNumbers(testPosition)
@@ -103,4 +101,8 @@ class Building :
         """Removes a Room instance from the building thanks to its name. A ValueError is raised if there is no room with such name.
         This operation is final and means that the Room instance is permanently deleted."""
         del self.rooms[self.getIndexRoom(name)]
-        
+    
+    def __str__(self):
+        """Returns a string representing the building"""
+        return """Building : name = {}, position = {}, rotation = {},
+                  size = {}""".format(self.name,self.position,self.rotation, self.size)
