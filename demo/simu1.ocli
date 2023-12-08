@@ -30,4 +30,4 @@
 +ro:/P/BASIC/A/R1@[0,0]@0@room-square1
 
 //rack
-+rk:/P/BASIC/A/R1/RACK1@[2,2]@t@[0,0,0]@[60,120,42]
++rk:/P/BASIC/A/R1/RACK1@[2,2]@t@[0,0,50]@[60,120,42]
