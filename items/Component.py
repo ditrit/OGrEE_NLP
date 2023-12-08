@@ -1,5 +1,4 @@
 
-
 class Component:
     def __init__(self, name : str, position : list, size : list, rotation : list):
         self.name = name

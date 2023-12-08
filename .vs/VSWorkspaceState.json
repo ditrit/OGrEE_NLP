@@ -1,11 +1,8 @@
 {
   "ExpandedNodes": [
     "",
-    "\\items"
+    "\\demo"
   ],
-<<<<<<< Updated upstream
-=======
-  "SelectedNode": "\\items\\Site.py",
->>>>>>> Stashed changes
+  "SelectedNode": "\\demo\\rooms",
   "PreviewInSolutionExplorer": false
 }

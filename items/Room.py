@@ -60,7 +60,7 @@ class Room :
             raise Exception("There is already the same component in this room.")
 
     def addPillar(self, name : str, center : list, size : list, rotation : int) -> None:
-        pillar = Pillar(".".join([self.name,name]),center,size,rotation)
+        pillar = Pillar("/".join([self.name,name]),center,size,rotation)
         self.addComponent(pillar)
         
     def getIndexComponent(self, name : str) -> int:
@@ -70,7 +70,7 @@ class Room :
         n = len(self.components) - 1
         if n < 0:
             raise IndexError("There is no component in this room.")
-        while k < n or (name != self.components[k].name and ".".join([self.name, name]) != self.components[k].name):
+        while k < n or (name != self.components[k].name and "/".join([self.name, name]) != self.components[k].name):
             k += 1
         if k == n + 1:
             raise ValueError("The component {} does not exist.".format(name))
@@ -83,7 +83,7 @@ class Room :
     #This method creates a group of rack
     def createGroup(self, name : str, *comp : Rack):
         if len(comp) != 0 : 
-            group = Group(self.name + "." + name)
+            group = Group(self.name + "/" + name)
             for compo in comp:
                group.addComponent(compo)
             self.components.append(group)
@@ -93,7 +93,7 @@ class Room :
         gets the first part of the name, which is put back in order."""
         if (name == ""):
             name = self.name
-        return "".join(reversed(name)).split(".",1)[-1][::-1]
+        return "".join(reversed(name)).split("/",1)[-1][::-1]
     
     def setName(self, newName : str) -> None:
         """If it is a complete new name, with the same parent name, then it is set as the new name. If the parent name is not the same,
@@ -101,7 +101,7 @@ class Room :
         if (self.getParentName(newName) == self.getParentName()):
             self.name = newName
         else:
-            self.name = ".".join([self.getParentName(),newName])
+            self.name = "/".join([self.getParentName(),newName])
     
     def setPosition(self, newPosition : list) -> None:
         """This sets a new position for the room"""

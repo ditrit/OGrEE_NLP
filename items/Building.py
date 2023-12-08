@@ -44,7 +44,7 @@ class Building :
     
     def addRoom(self, name : str, position : list, rotation, size : list = None, axisOrientation : str = None, floorUnit : str = None, template : str = None, components : list[Component] = []) -> None:
         """Adds a Room instance with specified parameters to the building."""
-        self.rooms.append(Room(".".join([self.name,name]), position, rotation, size, axisOrientation, floorUnit, template, components))
+        self.rooms.append(Room("/".join([self.name,name]), position, rotation, size, axisOrientation, floorUnit, template, components))
     
     def getIndexRoom(self, name : str) -> int:
         """Returns the index of a room thanks to its name in the list of roomss in the building. A ValueError is raised if there
@@ -53,7 +53,7 @@ class Building :
         n = len(self.rooms) - 1
         if n < 0:
             raise IndexError("There is no building in this site.")
-        while k < n or (name != self.rooms[k].name and ".".join([self.name,name]) != self.rooms[k].name):
+        while k < n or (name != self.rooms[k].name and "/".join([self.name,name]) != self.rooms[k].name):
             k += 1
         if k == n + 1:
             raise ValueError("The room {} does not exist.".format(name))
@@ -68,7 +68,7 @@ class Building :
         gets the first part of the name, which is put back in order."""
         if (name == ""):
             name = self.name
-        return "".join(reversed(name)).split(".",1)[-1][::-1]    
+        return "".join(reversed(name)).split("/",1)[-1][::-1]    
 
     def setName(self, newName : str) -> None:
         """If it is a complete new name, with the same parent name, then it is set as the new name. If the parent name is not the same,
@@ -76,7 +76,7 @@ class Building :
         if (self.getParentName(newName) == self.getParentName()):
             self.name = newName
         else:
-            self.name = ".".join([self.getParentName(),newName])
+            self.name = "/".join([self.getParentName(),newName])
     
     def setPosition(self, newPosition : list) -> None:
         """This sets a new position for the building"""

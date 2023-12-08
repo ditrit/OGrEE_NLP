@@ -14,14 +14,14 @@ class Site :
         gets the first part of the name, which is put back in order."""
         if (name == ""):
             name = self.name
-        return "".join(reversed(name)).split(".",1)[-1][::-1]
+        return "".join(reversed(name)).split("/",1)[-1][::-1]
     
     def setName(self, newName : str) -> None:
         self.name = newName
     
     def addBuilding(self, name : str, position : list, rotation, size : list, template : str, rooms : list[Room] = []) -> None:
         """Adds a Building instance with specified parameters to the site."""
-        self.buildings.append(Building(".".join([self.name,name]), position, rotation, size, template, rooms))
+        self.buildings.append(Building("/".join([self.name,name]), position, rotation, size, template, rooms))
     
     def getIndexBuilding(self, name : str) -> int:
         """Returns the index of a Building thanks to its name in the list of buildings located on the site. A ValueError is raised if there
@@ -30,7 +30,7 @@ class Site :
         n = len(self.buildings) - 1
         if n < 0:
             raise IndexError("There is no building in this site.")
-        while k < n or (name != self.buildings[k].name and ".".join([self.name, name]) != self.buildings[k].name):
+        while k < n or (name != self.buildings[k].name and "/".join([self.name, name]) != self.buildings[k].name):
             k += 1
         if k == n + 1:
             raise ValueError("The building {} does not exist.".format(name))
