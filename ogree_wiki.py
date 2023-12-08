@@ -170,7 +170,7 @@ class Rack:
     rotation_possible = {"LEFT" : [0,90,0], "RIGHT": [0,-90,0], "FRONT" : [0,0,180], "REAR": [0,0,0] , "TOP": [90,0,0],
     "BOTTOM": [-90,0,0]}
 
-    def __init__(self, position : list, unit : str, rack_rotation : str | list, size : list : None, template : str = None):
+    def __init__(self, position : list, unit : str, rack_rotation : str | list, size : list = None, template : str = None):
         self.position = position
         self.unit = unit
         self.rack_rotation = rack_rotation
