@@ -30,7 +30,10 @@ def readCommandOCLI(command : str) -> list:
     parts = command.split(":")
     typeOfCommand = parts[0]
     parameters = parts[1].split("@")
-    return TERRORIST[typeOfCommand](parameters)
+    return typeOfCommand, parameters
+    
+def executeCommandOCLI(command : str, parameters : list):
+    return TERRORIST[command](parameters)
 
 def createSiteFromCommand(parameters : list) -> Site:
     """Creates a site from given parameters"""
@@ -59,7 +62,15 @@ def createRoomFromCommand(parameters : list) -> Room:
     template = parameters[3]
     return createRoomFromTemplate(name,position,rotation,template)
 
+def getTypeFromName(filename : str, name : str):
+    """This function is supposed to return the type of an object thanks to its name, but it might be ineffective
+    in case a name is used for different objects"""
+    k, line = readFileOCLI(filename, name)
+    typeOfCommand, parameters = readCommandOCLI(line)
+    return TYPES[typeOfCommand]
     
+
+TYPES = {"+ro" : Room, "+si" : Site, "+bd" : Building}    
     
 TERRORIST = {"+ro" : createRoomFromCommand, "+si" : createSiteFromCommand, "+bd" : createBuidlingFromCommand}
 
@@ -67,4 +78,4 @@ if __name__ == "__main__":
     testCommand = "+bd:/P/BASIC/A@[0,0]@0@[24,30,1]"
     #print(createRoomFromTemplate("R1", [0,0], 0, "demo/rooms/room-square1.json"))
     #print(readFileOCLI("demo/simu1.ocli", "/P/BASIC/A/R1"))
-    print(readCommandOCLI(testCommand))
+    print(getTypeFromName("demo/simu1.ocli","/P/BASIC"))
