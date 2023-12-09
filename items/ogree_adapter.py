@@ -3,7 +3,6 @@ from Room import Room
 from Site import Site
 from Building import Building
 
-
 def createRoomFromTemplate(name :str, position : list, rotation : int, filename : str) -> Room:
     """Creates a Room instance from a json file with a template"""
     filename = "demo/rooms/" + filename + ".json"
@@ -12,7 +11,7 @@ def createRoomFromTemplate(name :str, position : list, rotation : int, filename 
     r = Room(name,position,rotation,roomDescription)
     return r
 
-def readFileOCLI(filename :str, searched : str) -> str:
+def readFileOCLI(filename :str, searched : str) -> (int,str):
     """Reads an OCLI file and returns a string"""
     k = 0
     with open(filename, "r") as commands:
@@ -68,6 +67,11 @@ def getTypeFromName(filename : str, name : str):
     k, line = readFileOCLI(filename, name)
     typeOfCommand, parameters = readCommandOCLI(line)
     return TYPES[typeOfCommand]
+
+
+def modifyAttributesSelection(names : list, attributeName : str, attributeArgument : str) -> str:
+    selection = "={" + ",".join(names) + "}" + "\n"
+    return selection + "selection.{}={}".format(attributeName, attributeArgument)
     
 
 TYPES = {"+ro" : Room, "+si" : Site, "+bd" : Building}    

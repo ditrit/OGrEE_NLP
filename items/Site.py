@@ -26,28 +26,12 @@ class Site :
             raise ValueError("The orientation is invalid")
         self.orientation = newOrientation
         return "{}:orientation={}".format(self.orientation, newOrientation)
+
+    def createAttribute(self, attributeName : str, attributeArgument):
+        return self.name + ".{}={}".format(attributeName,attributeArgument)
     
-    def setDescription(self, description : str):
-        return self.name + ":description={}".format(description)
-
-    def setAdress(self, adress : str):
-        return self.name + ":adress={}".format(adress)
-
-    def setZipcode(self, zipcode : int):
-        if len(zipcode) != 5:
-            raise ValueError("The zipcode is invalid")
-        return self.name + ":zipcode={}".format(zipcode)
-
-    def setCity(self, city : str):
-        return self.name + ":city={}".format(city)
-
-    def setCountry(self, country : str):
-        return self.name + ":country={}".format(country)
-    
-    def setGPS(self, gps : list):
-        if len(gps) != 3 and not isListOfNumbers(gps):
-            raise ValueError("The gps coordinates are invalid")
-        return self.name + ":gps={}".format(gps)
+    def setAttribute(self, attributeName : str, attributeArgument):
+        return self.name + ":{}={}".format(attributeName,attributeArgument)
     
     def setUsableColor(self, color : str) -> str:
         if not isHexColor(color):
