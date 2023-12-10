@@ -1,15 +1,9 @@
 import re
 from Component import Component
-<<<<<<< Updated upstream
-
 from Pillar import Pillar
 
 from Group import Group
 from Rack import Rack
-
-=======
->>>>>>> Stashed changes
-
 
 class Room :
     def __init__(self, name : str, position : list, rotation, size : list = None, axisOrientation : str = None, floorUnit : str = None, template : str = None, components : list[Component] = []):

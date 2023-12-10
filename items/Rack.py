@@ -63,3 +63,35 @@ class Rack(Component):
             for compo in comp:
                 group.addComponent(compo)
                 self.components.append(group)
+
+    def getFloorArea(self):
+        """Returns the floor area of a given component."""
+        if(self.rotation == "rear" || self.rotation == "front"):
+            return self.size[0]*self.size[1]
+        elif(self.rotation == "top" || self.rotation == "bottom"):
+            return self.size[0]*self.size[2]
+        elif(self.rotation == "left" || self.rotation == "right"):
+            return self.size[1]*self.size[2]
+            
+    def possible_next_to(self):
+        positions = []
+        if(self.rotation == "rear" || self.rotation == "front"):
+            width = self.size[0]
+            length = self.size[1]
+        elif(self.rotation == "top" || self.rotation == "bottom"):
+            width = self.size[0]
+            length = self.size[2]
+        elif(self.rotation == "left" || self.rotation == "right"):
+            width = self.size[1]
+            length = self.size[2]
+        
+    def placer_rack(self, room : Room):
+        """methode de placement automatique d'un rack"""
+        components = room.components
+        racks = []
+        for component in components:
+            if(type(component)==Rack):
+                racks.append(component)
+        if(len(racks)>0):
+            for rack2 in racks :
+                

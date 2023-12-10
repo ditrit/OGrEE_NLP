@@ -10,3 +10,9 @@ class Component:
         if (type(__value) != Component):
             raise TypeError("A component is exepcted.")
         return self.name == __value.name
+
+    def getFloorArea(self):
+        """Returns the floor area of a given component."""
+        return self.size[0]*self.size[1]
+            
+
