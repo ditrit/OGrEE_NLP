@@ -6,11 +6,11 @@ class Rack(Component):
     rotation_possible = {"LEFT" : [0,90,0], "RIGHT": [0,-90,0], "FRONT" : [0,0,180], "REAR": [0,0,0] , "TOP": [90,0,0],
     "BOTTOM": [-90,0,0]}
 
-    def __init__(self, name : str, position : list, unit : str, rack_rotation : str | list, size : list = None, template : str = None, *components : Component):
+    def __init__(self, name : str, position : list, unit : str, rack_rotation : str | list, size : list = None, template : str = None, components : list = []):
         self.name = name
         self.position = position
         self.unit = unit
-        if rack_rotation !=None and type(rack_rotation) ==str:
+        if rack_rotation != None and type(rack_rotation) == str:
             self.rack_rotation = rack_rotation.upper()
         else :
             self.rack_rotation = rack_rotation
@@ -19,8 +19,8 @@ class Rack(Component):
         self.components = components
     
     def isConform(self):
-        boolean = True
-        
+        boolean = super().isConform()        
+
         #We verify that we have at least 2 coordinate in position
         boolean = boolean and (len(self.position) ==2 or len(self.position) ==3)
         
