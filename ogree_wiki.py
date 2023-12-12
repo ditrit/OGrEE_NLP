@@ -90,7 +90,7 @@ def conformityParameter(element : str, parameter : str, entry) :
 def conformityList(dictio_conformity : dict, entry_list) :
     boolean = True
     boolean = boolean and (len(entry_list) == dictio_conformity["len"])
-    for entry in entry_list : 
+    for entry in entry_list: 
         boolean = boolean and (type(entry) in dictio_conformity["type_value"])
     return boolean
 
@@ -98,7 +98,7 @@ class Site :
     def __init__(self, name : str) :
         self.name = name
 
-    def makeCLI(self) :
+    def makeCLI(self):
         return str(self.name)
 
 class Building :
@@ -165,12 +165,12 @@ class Room :
     def addPillar(self, name : str, center : list, size : list, rotation : int) -> None:
         #TO DO : Quentin
         pass
-
+"""
 class Rack:
     rotation_possible = {"LEFT" : [0,90,0], "RIGHT": [0,-90,0], "FRONT" : [0,0,180], "REAR": [0,0,0] , "TOP": [90,0,0],
     "BOTTOM": [-90,0,0]}
 
-    def __init__(self, position : list, unit : str, rack_rotation : str | list, size : list : None, template : str = None):
+    def __init__(self, position : list, unit : str, rack_rotation : str | list, size : list = None, template : str = None):
         self.position = position
         self.unit = unit
         self.rack_rotation = rack_rotation
@@ -188,8 +188,7 @@ class Rack:
             boolean = boolean and (type(coor) in [float,int])
         #We check the rotation. It should be a str which is a key of rotation_possible or a list in the values
         # of rotation_possible
-        boolean = boolean and (rack_rotation in rotation_possible.keys() or rack_rotation in rotation_possible.values())
-
+        boolean = boolean and (rack_rotation in rotation_possible.keys() or rack_rotatiotation_possible.values())
         #We should have a size XOR a template
         if (self.size != None or self.template !=None) and not(self.size !=None and self.template !=None) :
 
@@ -198,7 +197,7 @@ class Rack:
                 boolean = boolean and len(self.size) ==3
                 #Each elements of size should be an int or a float
                 for elem in self.size:
-                  boolean = boolean and type(elem) in [float, int]
+                    boolean = boolean and type(elem) in [float, int]
             
             #A rack can have a template
             if(self.template !=None):
@@ -207,6 +206,6 @@ class Rack:
         else: 
             boolean = False
         
-        return boolean
+        return boolean"""
 
 
