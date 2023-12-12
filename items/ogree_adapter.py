@@ -11,7 +11,7 @@ def createRoomFromTemplate(name :str, position : list, rotation : int, filename 
     r = Room(name,position,rotation,roomDescription)
     return r
 
-def readFileOCLI(filename :str, searched : str) -> (int,str):
+def readFileOCLI(filename : str, searched : str) -> (int,str):
     """Reads an OCLI file and returns a string"""
     k = 0
     with open(filename, "r") as commands:
@@ -34,24 +34,7 @@ def readCommandOCLI(command : str) -> list:
 def executeCommandOCLI(command : str, parameters : list):
     return TERRORIST[command](parameters)
 
-def createSiteFromCommand(parameters : list) -> Site:
-    """Creates a site from given parameters"""
-    if len(parameters) != 1:
-        raise TypeError("An incorrect number of arguments was given")
-    name = parameters[0]
-    return Site(name)
-
-def createBuidlingFromCommand(parameters : list) -> Building:
-    """Creates a building from given parameters"""
-    if len(parameters) != 4:
-        raise TypeError("An incorrect number of arguments was given")
-    name = parameters[0]
-    position = json.loads(parameters[1])
-    rotation = json.loads(parameters[2])
-    size = json.loads(parameters[3])
-    return Building(name, position, rotation, size)
-
-def createRoomFromCommand(parameters : list) -> Room:
+def createRoom(parameters : list) -> Room:
     """Creates a room from given parameters"""
     if len(parameters) != 4:
         raise TypeError("An incorrect number of arguments was given")
