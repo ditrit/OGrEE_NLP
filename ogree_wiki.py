@@ -99,7 +99,6 @@ PARAMETERS_FORMAT = {
                                                         "description" : "name of the template",
                                                         "type" : [str],
                                                         }
-                        }
                         },
                 "room" : {
                         "name" : {
@@ -197,8 +196,9 @@ PARAMETERS_FORMAT = {
                                 "type" : [str],
                                 "value" : ["cold", "warm"],
                                 },
-                        }                
-                }
+                        }     
+}           
+                
 
 def makeDictParam(entity : str) -> dict :
     dictio = {}
@@ -308,6 +308,7 @@ class Room :
     def addPillar(self, name : str, center : list, size : list, rotation : int) -> None:
         #TO DO : Quentin
         pass
+"""
 """
 class Rack:
     rotation_possible = {"LEFT" : [0,90,0], "RIGHT": [0,-90,0], "FRONT" : [0,0,180], "REAR": [0,0,0] , "TOP": [90,0,0],
