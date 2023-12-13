@@ -7,7 +7,8 @@ ENTITIES = {
             "rack" : "rk",
             "device" : "dv",
             "group" : "gr",
-            "corridor" : "co"
+            "corridor" : "co",
+            "tag" : "tag"
             }
 
 PARAMETERS_NAME = {
@@ -15,11 +16,26 @@ PARAMETERS_NAME = {
                             "optional" : []
                             },
                 "building" : {  "mandatory" : ["name","position","rotation"], 
-                                "optional" : ["size"]
+                                "optional" : ["size","template"]
                                 },
                 "room" : {  "mandatory" : ["name","position","rotation"], 
                             "optional" : ["size", "axisOrientation", "floorUnit"]
                             },
+                "rack" : {  "mandatory" : ["name", "position", "unit","rotation"],
+                            "optional" : ["size","template"]
+                            },
+                "device" : {
+                            "mandatory" : ["name"],
+                            "optional" : ["position","size","template","slot","side"]
+                            },
+                "corridor" : {
+                            "mandatory" : ["name", "position", "unit","rotation","size","temperature"],
+                            "optional" : []
+                            },
+                "tag" :     {
+                            "mandatory" : ["name","color"],
+                            "optional" : []
+                            }
                 }
 
 PARAMETERS_FORMAT = {
@@ -54,7 +70,36 @@ PARAMETERS_FORMAT = {
                                                         "description" : "name of the template",
                                                         "type" : [str],
                                                         }
-                                        }
+                                        },
+                        "rack" : {
+                                        "name" : {
+                                                    "description" : "name of the building without blankspaces",
+                                                    "type" : [str],
+                                                    },
+                                        "position" : {
+                                                        "description" : "vector [x,y] or [x,y,z] in m, float",
+                                                        "type" : [list],
+                                                      #  "len" : 2, Ici c'est 2 ou 3 et de la manière dont ça a été codé il vaut mieux
+                                                      #rien mettre
+                                                        "type_value" : [float, int]
+                                                        },
+                                        "rotation" : {
+                                                        "description" : "rotation of the building from its lower left corner in degrees",
+                                                        "type" : [list, str],
+                                                        "len"  : 3,
+                                                        "type_value" : [float,int]
+                                                        },
+                                        "size" : {
+                                                    "description" : "vector [width, length, height] in m",
+                                                    "type" : [list],
+                                                    "len" : 3,
+                                                    "type_value" : [float, int]
+                                                    },
+                                        "template" : {
+                                                        "description" : "name of the template",
+                                                        "type" : [str],
+                                                        }
+                        }
                         }
 
 def makeDictParam(entity : str) -> dict :
