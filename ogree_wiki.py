@@ -100,7 +100,105 @@ PARAMETERS_FORMAT = {
                                                         "type" : [str],
                                                         }
                         }
-                        }
+                        },
+                "room" : {
+                        "name" : {
+                                "description" : "name of the room without blankspaces",
+                                "type" : [str],
+                                },
+                        "position" : {
+                                "description" : "vector [x,y] in m, float",
+                                "type" : [list],
+                                "len" : [2],
+                                "type_value" : [float, int]
+                                },
+                        "rotation" : {
+                                "description" : "rotation of the room from its lower left corner in degrees",
+                                "type" : [float, int]
+                                },
+                        "size" : {
+                                "description" : "vector [width, length, height] in m",
+                                "type" : [list],
+                                "len" : [3],
+                                "type_value" : [float, int]
+                                },
+                        "axisOrientation" : {
+                                "description" : "orientation of the rows and columns",
+                                "type" : [str],
+                                },
+                        "floorUnit" : {
+                                "description" : "unit type on the floor for the room",
+                                "type" : [str],
+                                "value" : ["t", "m", "f"]
+                                },        
+                        "template" : {
+                                "description" : "name of the template",
+                                "type" : [str],
+                                }
+                        },
+                "device" : {
+                        "name" : {
+                                "description" : "name of the device without blankspaces",
+                                "type" : [str],
+                                },
+                        "slot" : {
+
+                                },
+                        "side" : {
+
+                                },
+                        "posU" : {
+
+                                },
+                        "sizeU" : {
+
+                                },     
+                        "template" : {
+                                "description" : "name of the template",
+                                "type" : [str],
+                                } 
+                        },
+                "group" : {
+                        "name" : {
+                                "description" : "name of the group without blankspaces",
+                                "type" : [str],
+                                },
+                        "nameChildren" : {
+                                "description" : "name of the children in the group",
+                                "type" : [list],
+                                "type_value" : [str],
+                                },
+                        },
+                "corridor" : {
+                        "name" : {
+                                "description" : "name of the corridor without blankspaces",
+                                "type" : [str],
+                                },
+                        "position" : {
+                                "description" : "vector [x,y] or [x,y,z] in m, float",
+                                "type" : [list],
+                                "len" : [2, 3],
+                                "type_value" : [float, int]
+                                },
+                        "rotation" : {
+                                "description" : "rotation of the corridor from its lower left corner in degrees",
+                                "type" : [list],
+                                "len" : [3],
+                                "type_value" : [float, int]
+                                },
+                        "size" : {
+                                "description" : "vector [width, length, height] in m",
+                                "type" : [list],
+                                "len" : [3],
+                                "type_value" : [float, int]
+                                },
+                        "temperature" : {
+                                "description" : "temperature of teh corridor",
+                                "type" : [str],
+                                "value" : ["cold", "warm"],
+                                },
+                        }                
+                }
 
 def makeDictParam(entity : str) -> dict :
     dictio = {}
@@ -138,7 +236,7 @@ def conformityList(dictio_conformity : dict, entry_list) :
     for entry in entry_list: 
         boolean = boolean and (type(entry) in dictio_conformity["type_value"])
     return boolean
-
+"""
 class Site :
     def __init__(self, name : str) :
         self.name = name

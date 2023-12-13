@@ -1,74 +1,56 @@
-from Building import Building
-from Room import Room
-from tools import isHexColor,isOrientation, isListOfNumbers
+"""This module contains methods to create commands from parameters for sites"""
 
-class Site :
-    def __init__(self, name : str, orientation : str = "") :
-        self.name = name
-        self.orientation = orientation
-        
-    def createCLI(self) -> str:
-        return "+si:{}".format(self.name)
-    
-    def getParentName(self, name = "") -> str:
-        """This method returns the name of the parent object. It reverses the name, then splits it using dot as separator, and only
-        gets the first part of the name, which is put back in order."""
-        if (name == ""):
-            name = self.name
-        return "".join(reversed(name)).split("/",1)[-1][::-1]
-    
-    def setName(self, newName : str) -> str:
-        self.name = newName
-        return "{}:name={}".format(self.name, newName)
-    
-    def setOrientation(self, newOrientation : str) -> str:
-        if not isOrientation(newOrientation):
-            raise ValueError("The orientation is invalid")
-        self.orientation = newOrientation
-        return "{}:orientation={}".format(self.orientation, newOrientation)
+from tools import isColorConform,isOrientationConform,getParentName, isNameConform, isConform
 
-    def createAttribute(self, attributeName : str, attributeArgument):
-        return self.name + ".{}={}".format(attributeName,attributeArgument)
-    
-    def setAttribute(self, attributeName : str, attributeArgument):
-        return self.name + ":{}={}".format(attributeName,attributeArgument)
-    
-    def setUsableColor(self, color : str) -> str:
-        if not isHexColor(color):
-            raise ValueError("The color format is invalid")
-        return self.name + ":usableColor={}".format(color)
-    
-    def setReservedColor(self, color : str) -> str:
-        if not isHexColor(color):
-            raise ValueError("The color format is invalid")
-        return self.name + ":reservedColor={}".format(color)
-    
-    def setTechnicalColor(self, color : str) -> str:
-        if not isHexColor(color):
-            raise ValueError("The color format is invalid")
-        return self.name + ":technicalColor={}".format(color)
-    
-    def getIndexBuilding(self, name : str) -> int:
-        """Returns the index of a Building thanks to its name in the list of buildings located on the site. A ValueError is raised if there
-        is no building with such name."""
-        k = 0
-        n = len(self.buildings) - 1
-        if n < 0:
-            raise IndexError("There is no building in this site.")
-        while k < n or (name != self.buildings[k].name and "/".join([self.name, name]) != self.buildings[k].name):
-            k += 1
-        if k == n + 1:
-            raise ValueError("The building {} does not exist.".format(name))
-        return k
+SITE_PARAMETERS = ["name","orientation"]
+CONFORMITY_CHECK = {"name" : isNameConform, "orientation" : isOrientationConform}
 
-    def getBuilding(self, name : str) -> Building:
-        """Returns a Building instance from the site thanks to its name. A ValueError is raised if there is no building with such name."""
-        return self.buildings[self.getIndexBuilding(name)]
+def createSite(parameters : dict) -> str:
+    """Creates a site from given parameters"""
+    if not isConform(parameters, SITE_PARAMETERS, CONFORMITY_CHECK):
+        raise ValueError("The parameters given are invalid for a site")
+        #this precondition is currently incomplete
+    return "+si:" + "@".join([str(parameters[key]) for key in SITE_PARAMETERS])
+
+def setName(oldName, newName : str) -> str:
+    """Changes the name of an object, and ensures to keep it coherent"""
+    oldNameParent = getParentName(oldName)
+    newNameParent = getParentName(newName)
+    if oldNameParent != newNameParent:
+        raise ValueError("The new name is invalid because it does not respect the convention of the parent name")
+    return "{}:name={}".format(oldName, newName)
     
-    def removeBuilding(self, name : str) -> None:
-        """Removes a Building instance from the site thanks to its name. A ValueError is raised if there is no building with such name.
-        This operation is final and means that the Building instance is permanently deleted."""
-        del self.buildings[self.getIndexBuilding(name)]
+def setOrientation(oldOrientation : str, newOrientation : str) -> str:
+    """Changes the orientation of an object"""
+    if not isOrientationConform(newOrientation):
+        raise ValueError("The orientation is invalid")
+    return "{}:orientation={}".format(oldOrientation, newOrientation)
+
+def createAttribute(name : str, attributeName : str, attributeArgument) -> str:
+    """Adds an attribute to an object with a given argument"""
+    return "{}.{}={}".format(name, attributeName,attributeArgument)
+    
+def setAttribute(name : str, attributeName : str, attributeArgument) -> str:
+    """Modifies an attribute of an object with a given argument"""
+    return "{}:{}={}".format(name,attributeName,attributeArgument)
+    
+def setUsableColor(name : str, color : str) -> str:
+    """Modifies the usable color of a site"""
+    if not isColorConform(color):
+        raise ValueError("The color format is invalid")
+    return "{}:usableColor={}".format(name, color)
+    
+def setReservedColor(name : str, color : str) -> str:
+    """Modifies the reserved color of a site"""
+    if not isColorConform(color):
+        raise ValueError("The color format is invalid")
+    return "{}:reservedColor={}".format(name, color)
+    
+def setTechnicalColor(name : str, color : str) -> str:
+    """Modifies the technical color of a site"""
+    if not isColorConform(color):
+        raise ValueError("The color format is invalid")
+    return "{}:technicalColor={}".format(name, color)
         
 if __name__ == "__main__":
-    pass
+    print(createSite({"name" : "P/BASIC", "orientation":"WSW"}))
