@@ -1,14 +1,14 @@
 """This module contains methods to create commands from parameters for buildings"""
 
-from items.tools import isConform, isNameConform, isPositionConform, isRotationConform, isSizeConform
-from tools import isListOfNumbers, getParentName
+import json
+from tools import isListOfNumbers, getParentName, isConform, isNameConform, isPositionConform, isRotationConform, isSizeConform
 
 BUILDING_PARAMETERS = ["name","position","rotation","size"]
 CONFORMITY_CHECK = {"name" : isNameConform, "position" : isPositionConform, "rotation" : isRotationConform, "size" : isSizeConform}
 
 def createBuilding(parameters : dict) -> str:
     """Creates a building from given parameters"""
-    if isConform(parameters, BUILDING_PARAMETERS, CONFORMITY_CHECK):
+    if not isConform(parameters, BUILDING_PARAMETERS, CONFORMITY_CHECK):
         raise ValueError("The parameters given are invalid for a building")
     return "+bd:" + "@".join([str(parameters[key]) for key in BUILDING_PARAMETERS])
 
@@ -38,3 +38,16 @@ def setSize(name : str, newSize : float) -> str:
         raise ValueError("The size format is invalid")
     #I'm still not sure about the format of the command, for now I use a dot between the name and the attribute but it might be changed
     return "{}.size={}".format(name, newSize)
+
+def readCommandOCLI(command : str) -> list:
+    """Reads an OCLI command and converts it"""
+    #a command is always separated from its paramaters by a semicolon
+    parts = command.split(":")
+    typeOfCommand = parts[0]
+    parameters = parts[1].split("@")
+    return typeOfCommand, [json.loads(parameter) for parameter in parameters[1::]]
+
+if __name__ == "__main__":
+    command = createBuilding({"name" : "P/BASIC", "position" : [5,6], "rotation" : 0, "size" : [6,23,2]})
+    print(command)
+    print(readCommandOCLI(command))

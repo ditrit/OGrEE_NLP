@@ -1,14 +1,11 @@
 import json
-from Room import Room
-from Site import Site
-from Building import Building
 
-def createRoomFromTemplate(name :str, position : list, rotation : int, filename : str) -> Room:
+def createRoomFromTemplate(name :str, position : list, rotation : int, filename : str) -> str:
     """Creates a Room instance from a json file with a template"""
     filename = "demo/rooms/" + filename + ".json"
     with open(filename, "r") as room:
         roomDescription = json.load(room)
-    r = Room(name,position,rotation,roomDescription)
+    r = ""
     return r
 
 def readFileOCLI(filename : str, searched : str) -> (int,str):
@@ -32,9 +29,10 @@ def readCommandOCLI(command : str) -> list:
     return typeOfCommand, parameters
     
 def executeCommandOCLI(command : str, parameters : list):
-    return TERRORIST[command](parameters)
+    #return TERRORIST[command](parameters)
+    pass
 
-def createRoom(parameters : list) -> Room:
+def createRoom(parameters : list):
     """Creates a room from given parameters"""
     if len(parameters) != 4:
         raise TypeError("An incorrect number of arguments was given")
@@ -54,15 +52,14 @@ def getTypeFromName(filename : str, name : str):
 
 def modifyAttributesSelection(names : list, attributeName : str, attributeArgument : str) -> str:
     selection = "={" + ",".join(names) + "}" + "\n"
-    return selection + "selection.{}={}".format(attributeName, attributeArgument)
+    return selection + "selection.{}={}".format(attributeName, attributeArgument)  
     
-
-TYPES = {"+ro" : Room, "+si" : Site, "+bd" : Building}    
-    
-TERRORIST = {"+ro" : createRoomFromCommand, "+si" : createSiteFromCommand, "+bd" : createBuidlingFromCommand}
+TYPES = []
 
 if __name__ == "__main__":
     testCommand = "+bd:/P/BASIC/A@[0,0]@0@[24,30,1]"
     #print(createRoomFromTemplate("R1", [0,0], 0, "demo/rooms/room-square1.json"))
     #print(readFileOCLI("demo/simu1.ocli", "/P/BASIC/A/R1"))
-    print(getTypeFromName("demo/simu1.ocli","/P/BASIC"))
+    #print(getTypeFromName("demo/simu1.ocli","/P/BASIC"))
+    print(readCommandOCLI(testCommand))
+    print(json.loads("[0,0]"))

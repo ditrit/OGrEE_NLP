@@ -64,7 +64,8 @@ def getParentName(completeName : str) -> str:
     return "".join(reversed(completeName)).split("/",1)[-1][::-1]
 
 if __name__ == "__main__":
-    print(parametersToString(["name", [3,5], 54, "WSW"]))
-    print(isAxisOrientationConform("+x+y"))
+    #print(parametersToString(["name", [3,5], 54, "WSW"]))
+    #print(isAxisOrientationConform("+x+y"))
+    print(getParentName("P/BASIC/ALPHA/R1/B0"))
 
 
