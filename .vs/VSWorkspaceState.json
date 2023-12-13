@@ -2,8 +2,9 @@
   "ExpandedNodes": [
     "",
     "\\demo",
+    "\\demo\\rooms",
     "\\items"
   ],
-  "SelectedNode": "\\items\\Site.py",
+  "SelectedNode": "\\items\\Room.py",
   "PreviewInSolutionExplorer": false
 }
