@@ -1,6 +1,6 @@
 // .cmds:C:/Nextcloud/4_customers/THEO_root.ocli
 
-.var:ROOT=C:\Users\thoxy\OneDrive\Documents\IMT-PJENT\Python
+.var:ROOT=C:\Users\thoxy\OneDrive\Documents\IMT-PJENT\OGrEE_NLP
 
 //.var:CUST=${ROOT}/4_customers/__DEMO__
 //.var:FILE=DEMO.BASIC
