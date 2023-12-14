@@ -28,7 +28,11 @@ def isNameConform(name : str) -> bool:
 def isPositionConform(position : list) -> bool:
     """Verifies that the list given in argument represents a position"""
     return len(position) == 2 and isListOfNumbers(position)
-    
+
+def isPositionRackConform(position : list) -> bool:
+    """Verifies that the list given in argument represents a position for a Rack"""
+    return (len(position) == 2 or len(position) == 3) and isListOfNumbers(position)
+
 def isRotationConform(rotation : float) -> bool:
     """Verifies that the argument is a number"""
     return type(rotation) in [float,int]
@@ -44,6 +48,10 @@ def isAxisOrientationConform(axis : str) -> bool:
 def isFloorUnitConform(floorUnit : str) -> bool:
     """Verifies that the floor unit is conform"""
     return floorUnit.replace(" ","") in ["t","f","m"]
+
+def isUnitConform(unit : str) ->bool:
+    """Verifies that the floor unit is conform"""
+    return floorUnit.replace(" ","") in ["t","f","m","u"]
 
 def isColorConform(color : str) -> bool:
     """Verifies that the string given in argument is an hexadecimal color"""
