@@ -1,6 +1,20 @@
+"""This module contains methods to create commands from parameters for racks"""
+
 from Component import Component
 from Group import Group
 from Device import Device
+from tools import isConform
+
+RACK_PARAMETERS = []
+CONFORMITY_CHECK = {}
+
+
+def createRack(parameters : dict) -> str:
+    """Creates a rack from given parameters"""
+    if not isConform(parameters, RACK_PARAMETERS, CONFORMITY_CHECK):
+        raise ValueError("The parameters given are invalid for a rack")
+    return "+rk:" + "@".join([str(parameters[key]) for key in RACK_PARAMETERS])
+
 
 class Rack(Component):
     rotation_possible = {"LEFT" : [0,90,0], "RIGHT": [0,-90,0], "FRONT" : [0,0,180], "REAR": [0,0,0] , "TOP": [90,0,0],
