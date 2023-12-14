@@ -56,6 +56,8 @@ def setFloorUnit(name : str, newFloorUnit : str) -> None:
         raise ValueError("The floor unit format is invalid")
     return "{}.floorUnit={}".format(name,newFloorUnit)
 
+
+
 if __name__ == "__main__":
     print(createRoom({"name" : "P/BASIC/ALPHA/R1", "position" : [2,6], "rotation" : 0, "axisOrientation" : "+x-y",
                       "size" : [5,8,2.4], "floorUnit" : "m"}))
