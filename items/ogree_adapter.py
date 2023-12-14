@@ -1,5 +1,6 @@
 import json
 
+
 def createRoomFromTemplate(name :str, position : list, rotation : int, filename : str) -> str:
     """Creates a Room instance from a json file with a template"""
     filename = "demo/rooms/" + filename + ".json"
@@ -32,6 +33,16 @@ def executeCommandOCLI(command : str, parameters : list):
     #return TERRORIST[command](parameters)
     pass
 
+def terrorist(parameters : list):
+    reifiedParameters = []
+    for parameter in parameters:
+        try:
+            reifiedParameters.append(json.loads(parameter))
+        except json.decoder.JSONDecodeError:
+            reifiedParameters.append(parameter)
+    return reifiedParameters
+
+
 def createRoom(parameters : list):
     """Creates a room from given parameters"""
     if len(parameters) != 4:
@@ -39,8 +50,8 @@ def createRoom(parameters : list):
     name = parameters[0]
     position = json.loads(parameters[1])
     rotation = json.loads(parameters[2])
-    template = parameters[3]
-    return createRoomFromTemplate(name,position,rotation,template)
+    template = json.loads(parameters[3])
+    return [name,position,rotation,template]
 
 def getTypeFromName(filename : str, name : str):
     """This function is supposed to return the type of an object thanks to its name, but it might be ineffective
@@ -58,8 +69,10 @@ TYPES = []
 
 if __name__ == "__main__":
     testCommand = "+bd:/P/BASIC/A@[0,0]@0@[24,30,1]"
-    print(createRoomFromTemplate("R1", [0,0], 0, "room-square1"))
     #print(readFileOCLI("demo/simu1.ocli", "/P/BASIC/A/R1"))
     #print(getTypeFromName("demo/simu1.ocli","/P/BASIC"))
-    #print(readCommandOCLI(testCommand))
+    typeOfCommand, parameters = readCommandOCLI(testCommand)
+    print(parameters)
+    print(terrorist(parameters))
+    #print(createRoom(parameters))
     #print(json.loads("[0,0]"))

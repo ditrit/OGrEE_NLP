@@ -2,15 +2,14 @@
 
 from tools import isColorConform,isOrientationConform,getParentName, isNameConform, isConform
 
-SITE_PARAMETERS = ["name","orientation"]
 CONFORMITY_CHECK = {"name" : isNameConform, "orientation" : isOrientationConform}
 
 def createSite(parameters : dict) -> str:
     """Creates a site from given parameters"""
-    if not isConform(parameters, SITE_PARAMETERS, CONFORMITY_CHECK):
+    if not isConform(parameters, CONFORMITY_CHECK):
         raise ValueError("The parameters given are invalid for a site")
         #this precondition is currently incomplete
-    return "+si:" + "@".join([str(parameters[key]) for key in SITE_PARAMETERS])
+    return "+si:" + "@".join([str(parameters[key]) for key in parameters.keys()])
 
 def setName(oldName, newName : str) -> str:
     """Changes the name of an object, and ensures to keep it coherent"""
