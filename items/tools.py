@@ -38,7 +38,12 @@ def isPositionRackConform(position : list) -> bool:
 def isRotationConform(rotation : float) -> bool:
     """Verifies that the argument is a number"""
     return type(rotation) in [float,int]
-    
+
+def isRotationRackConform(rotation : list) -> bool:
+    """Verifies that the argument is a number"""
+    return type(rotation) == list and len(rotation) == 3 and isListOfNumbers(rotation)
+
+
 def isSizeConform(size : list) -> bool:
     """Verifies that the list given in argument represents a size"""
     return len(size) == 3 and isListOfNumbers(size)

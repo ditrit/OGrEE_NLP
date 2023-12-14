@@ -13,7 +13,7 @@ ENTITIES = {
 
 PARAMETERS_NAME = {
                 "site" : {  "mandatory" : ["name"], 
-                            "optional" : ["rotation"]
+                            "optional" : ["orientation"]
                             },
                 "building" : {  "mandatory" : ["name","position","rotation"], 
                                 "optional" : ["size","template"]
