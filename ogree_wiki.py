@@ -39,38 +39,38 @@ PARAMETERS_NAME = {
                 }
 
 PARAMETERS_FORMAT = {
-                        "site" : {
-                                    "name" : {
-                                                "description" : "name of the site without blankspaces",
-                                                "type" : [str],
-                                                }
+                "site" : {
+                            "name" : {
+                                        "description" : "name of the site without blankspaces",
+                                        "type" : [str],
+                                        }
+                            },
+                "building" : {
+                        "name" : {
+                                    "description" : "name of the building without blankspaces",
+                                    "type" : [str],
                                     },
-                        "building" : {
-                                        "name" : {
-                                                    "description" : "name of the building without blankspaces",
-                                                    "type" : [str],
-                                                    },
-                                        "position" : {
-                                                        "description" : "vector [x,y] in m, float",
-                                                        "type" : [list],
-                                                        "len" : 2,
-                                                        "type_value" : [float, int]
-                                                        },
-                                        "rotation" : {
-                                                        "description" : "rotation of the building from its lower left corner in degrees",
-                                                        "type" : [float, int]
-                                                        },
-                                        "size" : {
-                                                    "description" : "vector [width, length, height] in m",
-                                                    "type" : [list],
-                                                    "len" : 3,
-                                                    "type_value" : [float, int]
-                                                    },
-                                        "template" : {
-                                                        "description" : "name of the template",
-                                                        "type" : [str],
-                                                        }
+                        "position" : {
+                                        "description" : "vector [x,y] in m, float",
+                                        "type" : [list],
+                                        "len" : [2],
+                                        "type_value" : [float, int]
                                         },
+                        "rotation" : {
+                                        "description" : "rotation of the building from its lower left corner in degrees",
+                                        "type" : [float, int]
+                                        },
+                        "size" : {
+                                    "description" : "vector [width, length, height] in m",
+                                    "type" : [list],
+                                    "len" : [3],
+                                    "type_value" : [float, int]
+                                    },
+                        "template" : {
+                                        "description" : "name of the template",
+                                        "type" : [str],
+                                        }
+                        },
                         "rack" : {
                                         "name" : {
                                                     "description" : "name of the building without blankspaces",
@@ -236,6 +236,7 @@ def conformityList(dictio_conformity : dict, entry_list) :
     for entry in entry_list: 
         boolean = boolean and (type(entry) in dictio_conformity["type_value"])
     return boolean
+
 """
 class Site :
     def __init__(self, name : str) :

@@ -15,6 +15,8 @@ def isListOfNumbers(lst : list) -> bool:
 
 def isConform(parameters : dict, standardParameters : list, conformityCheck : dict) -> bool:
     """Verifies that the parameters given are conform to a standard given by standardParameters and conformityCheck"""
+    if (standardParameters == [] or conformityCheck == {}):
+        raise NotImplementedError("There are no standard parameters")
     print("The given parameters :")
     print([conformityCheck[attribute](parameters[attribute]) for attribute in standardParameters])
     print(all([conformityCheck[attribute](parameters[attribute]) for attribute in standardParameters]))
@@ -47,7 +49,7 @@ def isAxisOrientationConform(axis : str) -> bool:
     
 def isFloorUnitConform(floorUnit : str) -> bool:
     """Verifies that the floor unit is conform"""
-    return floorUnit.replace(" ","") in ["t","f","m"]
+    return floorUnit.replace(" ","") in ["t","f","m","u"]
 
 def isUnitConform(unit : str) ->bool:
     """Verifies that the floor unit is conform"""
