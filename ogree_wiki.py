@@ -39,67 +39,66 @@ PARAMETERS_NAME = {
                 }
 
 PARAMETERS_FORMAT = {
-                        "site" : {
-                                    "name" : {
-                                                "description" : "name of the site without blankspaces",
-                                                "type" : [str],
-                                                }
+                "site" : {
+                            "name" : {
+                                        "description" : "name of the site without blankspaces",
+                                        "type" : [str],
+                                        }
+                            },
+                "building" : {
+                        "name" : {
+                                    "description" : "name of the building without blankspaces",
+                                    "type" : [str],
                                     },
-                        "building" : {
-                                        "name" : {
-                                                    "description" : "name of the building without blankspaces",
-                                                    "type" : [str],
-                                                    },
-                                        "position" : {
-                                                        "description" : "vector [x,y] in m, float",
-                                                        "type" : [list],
-                                                        "len" : 2,
-                                                        "type_value" : [float, int]
-                                                        },
-                                        "rotation" : {
-                                                        "description" : "rotation of the building from its lower left corner in degrees",
-                                                        "type" : [float, int]
-                                                        },
-                                        "size" : {
-                                                    "description" : "vector [width, length, height] in m",
-                                                    "type" : [list],
-                                                    "len" : 3,
-                                                    "type_value" : [float, int]
-                                                    },
-                                        "template" : {
-                                                        "description" : "name of the template",
-                                                        "type" : [str],
-                                                        }
+                        "position" : {
+                                        "description" : "vector [x,y] in m, float",
+                                        "type" : [list],
+                                        "len" : [2],
+                                        "type_value" : [float, int]
                                         },
-                        "rack" : {
-                                        "name" : {
-                                                    "description" : "name of the building without blankspaces",
-                                                    "type" : [str],
-                                                    },
-                                        "position" : {
-                                                        "description" : "vector [x,y] or [x,y,z] in m, float",
-                                                        "type" : [list],
-                                                      #  "len" : 2, Ici c'est 2 ou 3 et de la manière dont ça a été codé il vaut mieux
-                                                      #rien mettre
-                                                        "type_value" : [float, int]
-                                                        },
-                                        "rotation" : {
-                                                        "description" : "rotation of the building from its lower left corner in degrees",
-                                                        "type" : [list, str],
-                                                        "len"  : 3,
-                                                        "type_value" : [float,int]
-                                                        },
-                                        "size" : {
-                                                    "description" : "vector [width, length, height] in m",
-                                                    "type" : [list],
-                                                    "len" : 3,
-                                                    "type_value" : [float, int]
-                                                    },
-                                        "template" : {
-                                                        "description" : "name of the template",
-                                                        "type" : [str],
-                                                        }
-                        }
+                        "rotation" : {
+                                        "description" : "rotation of the building from its lower left corner in degrees",
+                                        "type" : [float, int]
+                                        },
+                        "size" : {
+                                    "description" : "vector [width, length, height] in m",
+                                    "type" : [list],
+                                    "len" : [3],
+                                    "type_value" : [float, int]
+                                    },
+                        "template" : {
+                                        "description" : "name of the template",
+                                        "type" : [str],
+                                        }
+                        },
+                "rack" : {
+                        "name" : {
+                                    "description" : "name of the building without blankspaces",
+                                    "type" : [str],
+                                    },
+                        "position" : {
+                                        "description" : "vector [x,y] or [x,y,z] in m, float",
+                                        "type" : [list],
+                                        #  "len" : 2, Ici c'est 2 ou 3 et de la manière dont ça a été codé il vaut mieux
+                                        #rien mettre
+                                        "type_value" : [float, int]
+                                        },
+                        "rotation" : {
+                                        "description" : "rotation of the building from its lower left corner in degrees",
+                                        "type" : [list, str],
+                                        "len"  : [3],
+                                        "type_value" : [float,int]
+                                        },
+                        "size" : {
+                                    "description" : "vector [width, length, height] in m",
+                                    "type" : [list],
+                                    "len" : [3],
+                                    "type_value" : [float, int]
+                                    },
+                        "template" : {
+                                        "description" : "name of the template",
+                                        "type" : [str],
+                                        }
                         },
                 "room" : {
                         "name" : {
@@ -308,7 +307,7 @@ class Room :
     def addPillar(self, name : str, center : list, size : list, rotation : int) -> None:
         #TO DO : Quentin
         pass
-"""
+
 class Rack:
     rotation_possible = {"LEFT" : [0,90,0], "RIGHT": [0,-90,0], "FRONT" : [0,0,180], "REAR": [0,0,0] , "TOP": [90,0,0],
     "BOTTOM": [-90,0,0]}
