@@ -1,6 +1,6 @@
 import json
 import re
-from tools import getParentName
+from tools import *
 
 def createRoomFromTemplate(name :str, position : list, rotation : int, filename : str):
     """Creates a Room instance from a json file with a template"""
@@ -63,20 +63,40 @@ def objects_in(obj : str, file_name : str) -> list:
     """Given an object 'obj', returns every object that are contained in this one"""
     objects = []
     names = getAllNames(file_name)
-    level = len(re.findall('/',obj))
+    level = nbOccurences('/',obj)
     for name in names:
-        if(len(re.findall('/',name))==level+1 and re.search(obj,name)):
+        if(nbOccurences('/',name)==level+1 and re.search(obj,name)):
             objects.append(name)
     return objects
 
-    
+def getParametersFromName(name : str, file_name : str) -> dict:
+    """Get the parameters of an object from his name"""
+    nbSlash = nbOccurences('/',name)
+    with open(file_name, "r") as file:
+        text = file.read()
+        pattern = re.compile(fr'.*{re.escape(name)}.*', re.MULTILINE)
+        commands = pattern.findall(text)
+        
+    copy_cmds = [cmd for cmd in commands if nbOccurences('/',cmd)==nbSlash]
+    match getTypeFromName(name,file_name):
+        case "Building":
+            return None
+        case "Room" :
+            return None
+        case "Site" :
+            return None
+        case "Rack" :
+            return None
+
+
+
 
 def modifyAttributesSelection(names : list, attributeName : str, attributeArgument : str) -> str:
     selection = "={" + ",".join(names) + "}" + "\n"
     return selection + "selection.{}={}".format(attributeName, attributeArgument)
     
 
-TYPES = {"+ro" : "Room", "+si" : "Site", "+bd" : "Building"}    
+TYPES = {"+ro" : "Room", "+si" : "Site", "+bd" : "Building", "+room" : "Room", "+site" : "Site", "+building" : "Building", "+rk" : "Rack", "+rack" : "Rack"}    
     
 # TERRORIST = {"+ro" : createRoomFromCommand, "+si" : createSiteFromCommand, "+bd" : createBuidlingFromCommand}
 
@@ -84,11 +104,14 @@ if __name__ == "__main__":
     testCommand = "+bd:/P/BASIC/A@[0,0]@0@[24,30,1]"
     #print(createRoomFromTemplate("R1", [0,0], 0, "demo/rooms/room-square1.json"))
     #print(readFileOCLI("demo/simu1.ocli", "/P/BASIC/A/R1"))
-    print(getTypeFromName("demo/simu1.ocli","/P/BASIC"))
+    # print(getTypeFromName("demo/simu1.ocli","/P/BASIC"))
     path = "C:\\Users\\lemoi\\Documents\\Cours\\Commande_Entreprise\\GitHub\\OGrEE_NLP\\DEMO.BASIC.ocli"
     commands = getAllNames(path)
     # for command in commands:
     #     print("objet : ",command,"\t| parent : ", getParentName(command))
     objects = objects_in('/P/BASIC/A/R1',path)
-    for obj in objects:
-        print(obj)
+    # for obj in objects:
+    #     print(obj)
+    cmds = getParametersFromName('/P/BASIC/A/R1/B07',path)
+    for cmd in cmds :
+        print(cmd)

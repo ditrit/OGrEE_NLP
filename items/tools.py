@@ -1,6 +1,7 @@
 """This module contains static tools for the different classes"""
 from ctypes.wintypes import BOOL
 import re
+from ogree_adaptater import *
 
 
 def isListOfNumbers(lst : list) -> bool:
@@ -53,10 +54,36 @@ def isOrientationConform(orientation : str) -> bool:
     """Verifies that the string given in argument is a valid orientation"""
     return orientation in ["N","S","W","E","NW","NE","SW","SE","ESE"
                            "WNW","NNW","NNE","ENE","WSW","SSW","SSE"]
+def hasTemplate(type : str, command : str) -> bool:
+    """Returns true if the given command uses a template"""
+    params = readCommandOCLI(command)
+    match type:
+        case "Building":
+             
+        case "Room" :
+            return None
+        case "Site" :
+            return None
+        case "Rack" :
+            return None
 
 def parametersToString(parameters : list) -> list:
     """Returns a list with the type of the parameters in the list changed to string"""
     return [str(parameter) for parameter in parameters]
+def nbOccurences(item : str, text : str) -> int:
+    """Count how many times item appears in text"""
+    return len(re.findall(item,text))
+
+def getParametersFromTemplate(name : str) -> dict:
+    """Get the parameters from a template file"""
+    with open(name + ".json",'r') as template:
+        content = json.loads(template)
+    return content
+
+def number_of_parameters(command : str):
+    """Returns the number of parameters in a command"""
+    paramaters = re.split(":",command)[1]
+    return len(re.split('@',parameters))
 
 def getParentName(completeName : str) -> str:
     """Returns the name of the parent object. It reverses the name, then splits it using dot as separator, and only
