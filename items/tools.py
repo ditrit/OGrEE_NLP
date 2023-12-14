@@ -84,7 +84,7 @@ def isFloorUnitConform(floorUnit : str) -> bool:
     """Verifies that the floor unit is conform"""
     return floorUnit.replace(" ","") in ["t","f","m","u"]
 
-def isUnitConform(unit : str) ->bool:
+def isUnitConform(floorUnit : str) ->bool:
     """Verifies that the floor unit is conform"""
     return floorUnit.replace(" ","") in ["t","f","m","u"]
 
@@ -96,6 +96,16 @@ def isOrientationConform(orientation : str) -> bool:
     """Verifies that the string given in argument is a valid orientation"""
     return orientation in ["N","S","W","E","NW","NE","SW","SE","ESE"
                            "WNW","NNW","NNE","ENE","WSW","SSW","SSE"]
+
+def isSlotConform(slot : str) -> bool:
+    return type(slot) == str
+
+def isSideConform(side : str) -> bool:
+    return side in ["front", "rear", "frontflipped", "rearflipped"]
+
+def isTemperatureConform(temperature : str) -> bool:
+    return temperature in ["cold", "warm"]
+
 #endregion
 
 #region:Helpers

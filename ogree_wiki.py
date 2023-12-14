@@ -192,7 +192,7 @@ PARAMETERS_FORMAT = {
                                 "type_value" : [float, int]
                                 },
                         "temperature" : {
-                                "description" : "temperature of teh corridor",
+                                "description" : "temperature of the corridor",
                                 "type" : [str],
                                 "value" : ["cold", "warm"],
                                 },
