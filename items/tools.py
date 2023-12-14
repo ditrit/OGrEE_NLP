@@ -8,6 +8,11 @@ def create(typeOfObject : str, parameters : dict) -> str:
         raise ValueError("The parameters given are invalid for the object of type :" + typeOfObject)
     return "+{}:".format(typeOfObject) + "@".join([str(parameters[key]) for key in parameters.keys()])
 
+def delete(typeOfObject : str, parameters : dict) -> str:
+    """Deletes an object from given parameters
+    We consider that the object exist with this name"""
+    return "-{}".format(parameters["name"])
+
 def setName(oldName, newName : str) -> str:
     """Changes the name of an object, and ensures to keep it coherent"""
     oldNameParent = getParentName(oldName)
