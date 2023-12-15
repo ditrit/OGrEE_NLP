@@ -19,10 +19,10 @@ PARAMETERS_NAME = {
                             "optional" : ["orientation"]
                             },
                 "building" : {  "mandatory" : ["name","position","rotation"], 
-                                "optional" : ["size","template"]
+                                "optional" : ["size","template","usableColor","reservedColor","technicalColor"]
                                 },
                 "room" : {  "mandatory" : ["name","position","rotation"], 
-                            "optional" : ["size", "axisOrientation", "floorUnit"]
+                            "optional" : ["size", "axisOrientation", "floorUnit","reserved","technical"]
                             },
                 "rack" : {  "mandatory" : ["name", "position", "unit","rotation"],
                             "optional" : ["size","template"]
