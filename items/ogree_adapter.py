@@ -1,7 +1,12 @@
 import json
+import re
+from tools import getParentName
 
 
 def createRoomFromTemplate(name :str, position : list, rotation : int, filename : str) -> str:
+    pass
+
+def createRoomFromTemplate(name :str, position : list, rotation : int, filename : str):
     """Creates a Room instance from a json file with a template"""
     filename = "demo/rooms/" + filename + ".json"
     with open(filename, "r") as room:
@@ -60,12 +65,36 @@ def getTypeFromName(filename : str, name : str):
     typeOfCommand, parameters = readCommandOCLI(line)
     return TYPES[typeOfCommand]
 
+def getAllNames(file_name : str) -> list:
+    """Returns all the names present in the ocli files"""
+    with open(file_name, "r") as file:
+        text = file.read()
+        pattern = re.compile(r'^[+].*', re.MULTILINE)
+        commands = pattern.findall(text)
+    names = [re.split('@',re.split(':',c)[1])[0] for c in commands]
+    return names
+
+def objects_in(obj : str, file_name : str) -> list:
+    """Given an object 'obj', returns every object that are contained in this one"""
+    objects = []
+    names = getAllNames(file_name)
+    level = len(re.findall('/',obj))
+    for name in names:
+        if(len(re.findall('/',name))==level+1 and re.search(obj,name)):
+            objects.append(name)
+    return objects
+
+    
 
 def modifyAttributesSelection(names : list, attributeName : str, attributeArgument : str) -> str:
     selection = "={" + ",".join(names) + "}" + "\n"
     return selection + "selection.{}={}".format(attributeName, attributeArgument)  
     
 TYPES = []
+
+TYPES = {"+ro" : "Room", "+si" : "Site", "+bd" : "Building"}    
+    
+# TERRORIST = {"+ro" : createRoomFromCommand, "+si" : createSiteFromCommand, "+bd" : createBuidlingFromCommand}
 
 if __name__ == "__main__":
     testCommand = "+bd:/P/BASIC/A@[0,0]@0@[24,30,1]"
@@ -76,3 +105,11 @@ if __name__ == "__main__":
     print(terrorist(parameters))
     #print(createRoom(parameters))
     #print(json.loads("[0,0]"))
+    print(getTypeFromName("demo/simu1.ocli","/P/BASIC"))
+    path = "C:\\Users\\lemoi\\Documents\\Cours\\Commande_Entreprise\\GitHub\\OGrEE_NLP\\DEMO.BASIC.ocli"
+    commands = getAllNames(path)
+    # for command in commands:
+    #     print("objet : ",command,"\t| parent : ", getParentName(command))
+    objects = objects_in('/P/BASIC/A/R1',path)
+    for obj in objects:
+        print(obj)
