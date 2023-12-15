@@ -113,15 +113,18 @@ def isOrientationConform(orientation : str,entity="") -> bool:
                            "WNW","NNW","NNE","ENE","WSW","SSW","SSE"]
 
 def isSlotConform(slot : str,entity="") -> bool:
+    """Verifies that the string given in argument is a valid slot"""
     return type(slot) == str
 
 def isTemplateConform(temp :  str,entity="") -> bool:
-    return type(teùmp) == str
+    return type(temp) == str
 
 def isSideConform(side : str,entity="") -> bool:
+    """Verifies that the string given in argument is a valid side"""
     return side in ["front", "rear", "frontflipped", "rearflipped"]
 
 def isTemperatureConform(temperature : str,entity="") -> bool:
+    """Verifies that the string given in argument is a valid temperature"""
     return temperature in ["cold", "warm"]
 
 #endregion

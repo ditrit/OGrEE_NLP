@@ -33,12 +33,8 @@ def readCommandOCLI(command : str) -> list:
     typeOfCommand = parts[0]
     parameters = parts[1].split("@")
     return typeOfCommand, parameters
-    
-def executeCommandOCLI(command : str, parameters : list):
-    #return TERRORIST[command](parameters)
-    pass
 
-def terrorist(parameters : list):
+def convertStringToObjects(parameters : list):
     reifiedParameters = []
     for parameter in parameters:
         try:
@@ -74,10 +70,10 @@ def getAllNames(file_name : str) -> list:
     names = [re.split('@',re.split(':',c)[1])[0] for c in commands]
     return names
 
-def objects_in(obj : str, file_name : str) -> list:
+def objects_in(obj : str, filename : str) -> list:
     """Given an object 'obj', returns every object that are contained in this one"""
     objects = []
-    names = getAllNames(file_name)
+    names = getAllNames(filename)
     level = len(re.findall('/',obj))
     for name in names:
         if(len(re.findall('/',name))==level+1 and re.search(obj,name)):
@@ -88,9 +84,7 @@ def objects_in(obj : str, file_name : str) -> list:
 
 def modifyAttributesSelection(names : list, attributeName : str, attributeArgument : str) -> str:
     selection = "={" + ",".join(names) + "}" + "\n"
-    return selection + "selection.{}={}".format(attributeName, attributeArgument)  
-    
-TYPES = []
+    return selection + "selection.{}={}".format(attributeName, attributeArgument)
 
 TYPES = {"+ro" : "Room", "+si" : "Site", "+bd" : "Building"}    
     
@@ -102,7 +96,7 @@ if __name__ == "__main__":
     #print(getTypeFromName("demo/simu1.ocli","/P/BASIC"))
     typeOfCommand, parameters = readCommandOCLI(testCommand)
     print(parameters)
-    print(terrorist(parameters))
+    print(convertStringToObjects(parameters))
     #print(createRoom(parameters))
     #print(json.loads("[0,0]"))
     print(getTypeFromName("demo/simu1.ocli","/P/BASIC"))
