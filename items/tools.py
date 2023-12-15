@@ -4,7 +4,7 @@ import re
 
 def create(typeOfObject : str, parameters : dict) -> str:
     """Creates an object from given parameters"""
-    if not isConform(parameters):
+    if not isConform(parameters,typeOfObject):
         raise ValueError("The parameters given are invalid for the object of type :" + typeOfObject)
     return "+{}:".format(typeOfObject) + "@".join([str(parameters[key]) for key in parameters.keys()])
 
@@ -32,12 +32,12 @@ def createAttribute(name : str, attributeName : str, attributeArgument) -> str:
     """Adds an attribute to an object with a given argument"""
     return "{}.{}={}".format(name, attributeName,attributeArgument)
 
-def isConform(parameters : dict) -> bool:
+def isConform(parameters : dict, entity="") -> bool:
     """Verifies that the parameters given are conform thanks to multiple verification
     functions, which are called if the parameter is in the parameters"""
     if (CONFORMITY_CHECK == {}):
         raise NotImplementedError("There are no implemented conformity checks")
-    return all([CONFORMITY_CHECK[attribute](parameters[attribute]) for attribute in parameters.keys()])
+    return all([CONFORMITY_CHECK[attribute](parameters[attribute],entity="") for attribute in parameters.keys()])
 
 #region:Tests
 def isListOfNumbers(lst : list) -> bool:
@@ -50,60 +50,78 @@ def isListOfNumbers(lst : list) -> bool:
         k += 1
     return verified
 
-def isNameConform(name : str) -> bool:
+def isNameConform(name : str, entity="") -> bool:
     """Verifies that the argument is a string. This function will potentially be changed if there are more
     specifications for the name"""
     return type(name) == str
 
-def isPositionConform(position : list) -> bool:
+def isPositionConform(position : list,entity="") -> bool:
     """Verifies that the list given in argument represents a position"""
-    return len(position) == 2 and isListOfNumbers(position)
+    match entity:
+        case 'device':
+            return len(position) == 1 and isListOfNumbers(position)
+        case 'rack':
+            return (len(position) == 2 or len(position) ==3) and isListOfNumbers(position)
+        case 'corridor':
+            return (len(position) == 2 or len(position) ==3) and isListOfNumbers(position)
+        case other:
+            return len(position) == 2 and isListOfNumbers(position)
 
-def isPositionRackConform(position : list) -> bool:
-    """Verifies that the list given in argument represents a position for a Rack"""
-    return (len(position) == 2 or len(position) == 3) and isListOfNumbers(position)
 
-def isRotationConform(rotation : float) -> bool:
+def isRotationConform(rotation : float|list,entity="") -> bool:
     """Verifies that the argument is a number"""
-    return type(rotation) in [float,int]
+    match entity:
+        case 'rack':
+            return type(rotation)==list and len(rotation) == 3 and isListOfNumbers(rotation)
+        case 'corridor':
+            return  type(rotation)==list and len(rotation) == 3 and isListOfNumbers(rotation)
+        case other:
+            return type(rotation) in [float,int]
+    
 
-def isRotationRackConform(rotation : list) -> bool:
-    """Verifies that the argument is a number"""
-    return type(rotation) == list and len(rotation) == 3 and isListOfNumbers(rotation)
 
-
-def isSizeConform(size : list) -> bool:
+def isSizeConform(size : list,entity="") -> bool:
     """Verifies that the list given in argument represents a size"""
-    return len(size) == 3 and isListOfNumbers(size)
+    match entity:
+        case 'device':
+            return len(size) == 1 and isListOfNumbers(size)
+        case 'pillar':
+            return len(size) == 2 and isListOfNumbers(size)
+        case other:
+            return len(size) == 3 and isListOfNumbers(size)
+    
 
-def isAxisOrientationConform(axis : str) -> bool:
+def isAxisOrientationConform(axis : str,entity="") -> bool:
     """Verifies that the axis orientation is conform"""
     return bool(re.compile(r"[+-]x[+-]y").match(axis))
     
-def isFloorUnitConform(floorUnit : str) -> bool:
+def isFloorUnitConform(floorUnit : str,entity="") -> bool:
+    """Verifies that the floor unit is conform"""
+    return floorUnit.replace(" ","") in ["t","f","m"]
+
+def isUnitConform(floorUnit : str,entity="") ->bool:
     """Verifies that the floor unit is conform"""
     return floorUnit.replace(" ","") in ["t","f","m","u"]
 
-def isUnitConform(floorUnit : str) ->bool:
-    """Verifies that the floor unit is conform"""
-    return floorUnit.replace(" ","") in ["t","f","m","u"]
-
-def isColorConform(color : str) -> bool:
+def isColorConform(color : str,entity="") -> bool:
     """Verifies that the string given in argument is an hexadecimal color"""
     return bool(re.compile(r"[0-9A-F]{6}").match(color))
 
-def isOrientationConform(orientation : str) -> bool:
+def isOrientationConform(orientation : str,entity="") -> bool:
     """Verifies that the string given in argument is a valid orientation"""
     return orientation in ["N","S","W","E","NW","NE","SW","SE","ESE"
                            "WNW","NNW","NNE","ENE","WSW","SSW","SSE"]
 
-def isSlotConform(slot : str) -> bool:
+def isSlotConform(slot : str,entity="") -> bool:
     return type(slot) == str
 
-def isSideConform(side : str) -> bool:
+def isTemplateConform(temp :  str,entity="") -> bool:
+    return type(teùmp) == str
+
+def isSideConform(side : str,entity="") -> bool:
     return side in ["front", "rear", "frontflipped", "rearflipped"]
 
-def isTemperatureConform(temperature : str) -> bool:
+def isTemperatureConform(temperature : str,entity="") -> bool:
     return temperature in ["cold", "warm"]
 
 #endregion
@@ -122,10 +140,12 @@ def getParentName(completeName : str) -> str:
 
 CONFORMITY_CHECK = {"name" : isNameConform, "orientation" : isOrientationConform, "position" : isPositionConform,
                     "rotation" : isRotationConform, "size" : isSizeConform, "axisOrientation" : isAxisOrientationConform,
-                    "floorUnit" : isFloorUnitConform, "color" : isColorConform}
+                    "floorUnit" : isFloorUnitConform, "color" : isColorConform, "template" : isTemplateConform,
+                    "slot" : isSlotConform, "side": isSideConform,"temperature":isTemperatureConform,"unit":isUnitConform,
+                    }
 
 if __name__ == "__main__":
     print(create("site",{"name" : "P/BASIC", "orientation":"WSW"}))
-    print(setAttribute("P/BASIC","position","WSW"))
+    print(setAttribute("P/BASIC","orientation","WSW"))
 
 
