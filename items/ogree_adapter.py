@@ -1,13 +1,11 @@
 import json
-import re
-from tools import *
 
-def createRoomFromTemplate(name :str, position : list, rotation : int, filename : str):
+def createRoomFromTemplate(name :str, position : list, rotation : int, filename : str) -> str:
     """Creates a Room instance from a json file with a template"""
     filename = "demo/rooms/" + filename + ".json"
     with open(filename, "r") as room:
         roomDescription = json.load(room)
-    r = Room(name,position,rotation,roomDescription)
+    r = roomDescription
     return r
 
 def readFileOCLI(filename : str, searched : str) -> (int,str):
@@ -31,7 +29,18 @@ def readCommandOCLI(command : str) -> list:
     return typeOfCommand, parameters
     
 def executeCommandOCLI(command : str, parameters : list):
-    return TERRORIST[command](parameters)
+    #return TERRORIST[command](parameters)
+    pass
+
+def terrorist(parameters : list):
+    reifiedParameters = []
+    for parameter in parameters:
+        try:
+            reifiedParameters.append(json.loads(parameter))
+        except json.decoder.JSONDecodeError:
+            reifiedParameters.append(parameter)
+    return reifiedParameters
+
 
 def createRoom(parameters : list):
     """Creates a room from given parameters"""
@@ -40,8 +49,8 @@ def createRoom(parameters : list):
     name = parameters[0]
     position = json.loads(parameters[1])
     rotation = json.loads(parameters[2])
-    template = parameters[3]
-    return createRoomFromTemplate(name,position,rotation,template)
+    template = json.loads(parameters[3])
+    return [name,position,rotation,template]
 
 def getTypeFromName(filename : str, name : str):
     """This function is supposed to return the type of an object thanks to its name, but it might be ineffective
@@ -78,22 +87,32 @@ def getParametersFromName(name : str, file_name : str) -> dict:
         commands = pattern.findall(text)
         
     copy_cmds = [cmd for cmd in commands if nbOccurences('/',cmd)==nbSlash]
-    match getTypeFromName(name,file_name):
+    object_type = getTypeFromName(name,file_name)
+    creation_cmd = copy_cmds[0] #we suppose that the commaand to create an object is always the first command to appear
+    params = terrorist(readCommandOCLI(creation_cmd))
+    match object_type:
         case "Building":
-            return None
+            if(hasTemplate(object_type,creation_cmd)):
+                params[3] = json.loads(params[3] + ".json")
+            if(len(copy_cmds)>1):
+                modifications = search_modifs(copy_cmds[1:])
         case "Room" :
-            return None
+            if(hasTemplate(object_type,creation_cmd)):
+                params[3] = json.loads(params[3] + ".json")
         case "Site" :
-            return None
+            return params
         case "Rack" :
-            return None
+            if(hasTemplate(object_type,creation_cmd)):
+                params[4] = json.loads(params[4] + ".json")
 
-
+def search_modifs(commands : list) -> list:
+    """Search the mofiication made on a object"""
+    return [(re.split("=",re.split(":",command)[1])[0],re.split("=",re.split(":",command)[1])[1]) for command in commands]
 
 
 def modifyAttributesSelection(names : list, attributeName : str, attributeArgument : str) -> str:
     selection = "={" + ",".join(names) + "}" + "\n"
-    return selection + "selection.{}={}".format(attributeName, attributeArgument)
+    return selection + "selection.{}={}".format(attributeName, attributeArgument)  
     
 
 TYPES = {"+ro" : "Room", "+si" : "Site", "+bd" : "Building", "+room" : "Room", "+site" : "Site", "+building" : "Building", "+rk" : "Rack", "+rack" : "Rack"}    
@@ -102,7 +121,6 @@ TYPES = {"+ro" : "Room", "+si" : "Site", "+bd" : "Building", "+room" : "Room", "
 
 if __name__ == "__main__":
     testCommand = "+bd:/P/BASIC/A@[0,0]@0@[24,30,1]"
-    #print(createRoomFromTemplate("R1", [0,0], 0, "demo/rooms/room-square1.json"))
     #print(readFileOCLI("demo/simu1.ocli", "/P/BASIC/A/R1"))
     # print(getTypeFromName("demo/simu1.ocli","/P/BASIC"))
     path = "C:\\Users\\lemoi\\Documents\\Cours\\Commande_Entreprise\\GitHub\\OGrEE_NLP\\DEMO.BASIC.ocli"

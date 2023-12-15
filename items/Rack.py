@@ -1,6 +1,20 @@
+"""This module contains methods to create commands from parameters for racks"""
+
 from Component import Component
 from Group import Group
 from Device import Device
+from tools import isConform
+
+RACK_PARAMETERS = []
+CONFORMITY_CHECK = {}
+
+
+def createRack(parameters : dict) -> str:
+    """Creates a rack from given parameters"""
+    if not isConform(parameters, RACK_PARAMETERS, CONFORMITY_CHECK):
+        raise ValueError("The parameters given are invalid for a rack")
+    return "+rk:" + "@".join([str(parameters[key]) for key in RACK_PARAMETERS])
+
 
 class Rack(Component):
     rotation_possible = {"LEFT" : [0,90,0], "RIGHT": [0,-90,0], "FRONT" : [0,0,180], "REAR": [0,0,0] , "TOP": [90,0,0],
@@ -19,7 +33,7 @@ class Rack(Component):
         self.components = components
     
     def isConform(self):
-        boolean = super().isConform()        
+        boolean = super().isConform()     
 
         #We verify that we have at least 2 coordinate in position
         boolean = boolean and (len(self.position) ==2 or len(self.position) ==3)
@@ -66,32 +80,22 @@ class Rack(Component):
 
     def getFloorArea(self):
         """Returns the floor area of a given component."""
-        if(self.rotation == "rear" || self.rotation == "front"):
+        if(self.rotation == "rear" or self.rotation == "front"):
             return self.size[0]*self.size[1]
-        elif(self.rotation == "top" || self.rotation == "bottom"):
+        elif(self.rotation == "top" or self.rotation == "bottom"):
             return self.size[0]*self.size[2]
-        elif(self.rotation == "left" || self.rotation == "right"):
+        elif(self.rotation == "left" or self.rotation == "right"):
             return self.size[1]*self.size[2]
             
     def possible_next_to(self):
         positions = []
-        if(self.rotation == "rear" || self.rotation == "front"):
+        if(self.rotation == "rear" or self.rotation == "front"):
             width = self.size[0]
             length = self.size[1]
-        elif(self.rotation == "top" || self.rotation == "bottom"):
+        elif(self.rotation == "top" or self.rotation == "bottom"):
             width = self.size[0]
             length = self.size[2]
-        elif(self.rotation == "left" || self.rotation == "right"):
+        elif(self.rotation == "left" or self.rotation == "right"):
             width = self.size[1]
             length = self.size[2]
-        
-    def placer_rack(self, room : Room):
-        """methode de placement automatique d'un rack"""
-        components = room.components
-        racks = []
-        for component in components:
-            if(type(component)==Rack):
-                racks.append(component)
-        if(len(racks)>0):
-            for rack2 in racks :
                 
