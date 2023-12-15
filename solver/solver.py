@@ -1,6 +1,6 @@
 import re
-from items.tools import *
-from items.ogree_adaptater import *
+from tools import *
+from ogree_adapter import *
 
 # def find_commands(file_name):
 #     file = open(file_name, "r")
@@ -8,9 +8,6 @@ from items.ogree_adaptater import *
 #     pattern = re.compile(r'^[+.].*', re.MULTILINE)
 #     return pattern.findall(text)
 # print(find_commands('DEMO.BASIC.ocli'))
-
-
-    return None
 
 # def name_to_object(name : str, file_name : str):
 #     text = open(file_name,'r').read()

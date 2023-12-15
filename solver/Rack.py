@@ -1,6 +1,6 @@
 from Component import Component
 from Group import Group
-from Device import Device
+from Room import Room
 
 class Rack(Component):
     rotation_possible = {"LEFT" : [0,90,0], "RIGHT": [0,-90,0], "FRONT" : [0,0,180], "REAR": [0,0,0] , "TOP": [90,0,0],
@@ -66,22 +66,22 @@ class Rack(Component):
 
     def getFloorArea(self):
         """Returns the floor area of a given component."""
-        if(self.rotation == "rear" || self.rotation == "front"):
+        if(self.rotation == "rear" or self.rotation == "front"):
             return self.size[0]*self.size[1]
-        elif(self.rotation == "top" || self.rotation == "bottom"):
+        elif(self.rotation == "top" or self.rotation == "bottom"):
             return self.size[0]*self.size[2]
-        elif(self.rotation == "left" || self.rotation == "right"):
+        elif(self.rotation == "left" or self.rotation == "right"):
             return self.size[1]*self.size[2]
             
     def possible_next_to(self):
         positions = []
-        if(self.rotation == "rear" || self.rotation == "front"):
+        if(self.rotation == "rear" or self.rotation == "front"):
             width = self.size[0]
             length = self.size[1]
-        elif(self.rotation == "top" || self.rotation == "bottom"):
+        elif(self.rotation == "top" or self.rotation == "bottom"):
             width = self.size[0]
             length = self.size[2]
-        elif(self.rotation == "left" || self.rotation == "right"):
+        elif(self.rotation == "left" or self.rotation == "right"):
             width = self.size[1]
             length = self.size[2]
         
@@ -94,4 +94,4 @@ class Rack(Component):
                 racks.append(component)
         if(len(racks)>0):
             for rack2 in racks :
-                
+                pass
