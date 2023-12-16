@@ -28,7 +28,7 @@ class Rack(Component):
 
     @classmethod
     def create_from_template(Rack,name,position,rack_rotation,template,unit = 't',components : list = [],clearance = [0, 0, 0, 0, 0, 0]):
-        size = super().set_size_from_template(template)
+        size = super().set_param_from_template(template,'size')
         return Rack(name, position,rack_rotation,size,unit,components,clearance)
 
     def set_clearance_from_template(template):
@@ -46,8 +46,6 @@ class Rack(Component):
 
     def get_vertices(self):
         x0,y0 = self.position
-        
-
     
     def isConform(self):
         boolean = super().isConform()     
