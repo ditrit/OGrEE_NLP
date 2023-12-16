@@ -1,25 +1,54 @@
+"""This module contains methods to create commands from parameters for racks"""
+
 from Component import Component
-from Group import Group
-from Room import Room
+from tools import isConform
+from math import *
+
+RACK_PARAMETERS = []
+CONFORMITY_CHECK = {}
+
+
+def createRack(parameters : dict) -> str:
+    """Creates a rack from given parameters"""
+    if not isConform(parameters, RACK_PARAMETERS, CONFORMITY_CHECK):
+        raise ValueError("The parameters given are invalid for a rack")
+    return "+rk:" + "@".join([str(parameters[key]) for key in RACK_PARAMETERS])
+
 
 class Rack(Component):
     rotation_possible = {"LEFT" : [0,90,0], "RIGHT": [0,-90,0], "FRONT" : [0,0,180], "REAR": [0,0,0] , "TOP": [90,0,0],
     "BOTTOM": [-90,0,0]}
+    possible_units = ['t','m','f']
 
-    def __init__(self, name : str, position : list, unit : str, rack_rotation : str | list, size : list = None, template : str = None, components : list = []):
-        self.name = name
-        self.position = position
+    def __init__(self, name : str, position : list, rack_rotation : str | list, size : list, unit : str = 't', components : list = [], clearance = [0, 0, 0, 0, 0, 0]):
         self.unit = unit
-        if rack_rotation != None and type(rack_rotation) == str:
-            self.rack_rotation = rack_rotation.upper()
-        else :
-            self.rack_rotation = rack_rotation
-        self.size = size
-        self.template = template
         self.components = components
+        self.clearance = clearance
+        super.__init__(name,position,rack_rotation,size)
+
+    @classmethod
+    def create_from_template(Rack,name,position,rack_rotation,template,unit = 't',components : list = [],clearance = [0, 0, 0, 0, 0, 0]):
+        size = super().set_param_from_template(template,'size')
+        return Rack(name, position,rack_rotation,size,unit,components,clearance)
+
+    def set_clearance_from_template(template):
+        with open(template) as json_file :
+            try:
+                template = json.load(json_file)
+                if 'clearance' in template:
+                    clearance = template['clearance']
+                    return clearance
+                else:
+                    print("Couldn't find clearance parameter in the file")
+            except BaseException as e:
+                print('The file contains invalid JSON')
+                print(e)
+
+    def get_vertices(self):
+        x0,y0 = self.position
     
     def isConform(self):
-        boolean = super().isConform()        
+        boolean = super().isConform()     
 
         #We verify that we have at least 2 coordinate in position
         boolean = boolean and (len(self.position) ==2 or len(self.position) ==3)
@@ -84,14 +113,4 @@ class Rack(Component):
         elif(self.rotation == "left" or self.rotation == "right"):
             width = self.size[1]
             length = self.size[2]
-        
-    def placer_rack(self, room : Room):
-        """methode de placement automatique d'un rack"""
-        components = room.components
-        racks = []
-        for component in components:
-            if(type(component)==Rack):
-                racks.append(component)
-        if(len(racks)>0):
-            for rack2 in racks :
-                pass
+                

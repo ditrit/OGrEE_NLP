@@ -1,13 +1,42 @@
-import re
-from tools import *
-from ogree_adapter import *
+import re, json, sys
+from items.Room import Room
+from items.Rack import Rack
 
+######################################## Methods to place an object next to a sibling ###################################################
+
+if __name__ == "main":
+    # print(name_to_object("/P/BASIC/A/R1/A01",'DEMO.BASIC.ocli'))
+    #path = 'C:\\Users\\lemoi\\Documents\\Cours\\Commande_Entreprise\\GitHub\\OGrEE_NLP\\items\\schneider-ns1000n.json'
+    path = 'C:\\Users\\lemoi\\Documents\\Cours\\Commande_Entreprise\\GitHub\\OGrEE_NLP\\items\\2crsi-dryzone-debug.json'
+
+    struct = {}
+
+    with open(path, encoding = 'utf-8') as json_file:
+
+        try:
+            # print(json_file.read())
+            template = json.load(json_file)  # 👈️ parse the JSON with load()
+            print(template)
+            size = template['sizeWDHmm']
+            print(size)
+        except BaseException as e:
+            print('The file contains invalid JSON')
+            print(e)
+
+    room = Room.create_from_template('AAA',[0,0,0],[0,90,0],path)
+    print(room)
+
+
+
+
+### OLD #############################################################################################################################
 # def find_commands(file_name):
 #     file = open(file_name, "r")
 #     text = file.read()
 #     pattern = re.compile(r'^[+.].*', re.MULTILINE)
 #     return pattern.findall(text)
 # print(find_commands('DEMO.BASIC.ocli'))
+
 
 # def name_to_object(name : str, file_name : str):
 #     text = open(file_name,'r').read()
@@ -67,5 +96,3 @@ from ogree_adapter import *
 #                 return [-90, 0, 0]
 #     else :
 #         return [float(angle) for angle in re.split(",",rot.replace("[","").replace("]",""))]
-
-# print(name_to_object("/P/BASIC/A/R1/A01",'DEMO.BASIC.ocli'))

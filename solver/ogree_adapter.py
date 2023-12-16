@@ -1,12 +1,6 @@
 import json
-import re
-from tools import getParentName
-
 
 def createRoomFromTemplate(name :str, position : list, rotation : int, filename : str) -> str:
-    pass
-
-def createRoomFromTemplate(name :str, position : list, rotation : int, filename : str):
     """Creates a Room instance from a json file with a template"""
     filename = "demo/rooms/" + filename + ".json"
     with open(filename, "r") as room:
@@ -33,8 +27,12 @@ def readCommandOCLI(command : str) -> list:
     typeOfCommand = parts[0]
     parameters = parts[1].split("@")
     return typeOfCommand, parameters
+    
+def executeCommandOCLI(command : str, parameters : list):
+    #return TERRORIST[command](parameters)
+    pass
 
-def convertStringToObjects(parameters : list):
+def terrorist(parameters : list):
     reifiedParameters = []
     for parameter in parameters:
         try:
@@ -70,40 +68,68 @@ def getAllNames(file_name : str) -> list:
     names = [re.split('@',re.split(':',c)[1])[0] for c in commands]
     return names
 
-def objects_in(obj : str, filename : str) -> list:
+def objects_in(obj : str, file_name : str) -> list:
     """Given an object 'obj', returns every object that are contained in this one"""
     objects = []
-    names = getAllNames(filename)
-    level = len(re.findall('/',obj))
+    names = getAllNames(file_name)
+    level = nbOccurences('/',obj)
     for name in names:
-        if(len(re.findall('/',name))==level+1 and re.search(obj,name)):
+        if(nbOccurences('/',name)==level+1 and re.search(obj,name)):
             objects.append(name)
     return objects
 
-    
+def getParametersFromName(name : str, file_name : str) -> dict:
+    """Get the parameters of an object from his name"""
+    nbSlash = nbOccurences('/',name)
+    with open(file_name, "r") as file:
+        text = file.read()
+        pattern = re.compile(fr'.*{re.escape(name)}.*', re.MULTILINE)
+        commands = pattern.findall(text)
+        
+    copy_cmds = [cmd for cmd in commands if nbOccurences('/',cmd)==nbSlash]
+    object_type = getTypeFromName(name,file_name)
+    creation_cmd = copy_cmds[0] #we suppose that the commaand to create an object is always the first command to appear
+    params = terrorist(readCommandOCLI(creation_cmd))
+    match object_type:
+        case "Building":
+            if(hasTemplate(object_type,creation_cmd)):
+                params[3] = json.loads(params[3] + ".json")
+            if(len(copy_cmds)>1):
+                modifications = search_modifs(copy_cmds[1:])
+        case "Room" :
+            if(hasTemplate(object_type,creation_cmd)):
+                params[3] = json.loads(params[3] + ".json")
+        case "Site" :
+            return params
+        case "Rack" :
+            if(hasTemplate(object_type,creation_cmd)):
+                params[4] = json.loads(params[4] + ".json")
+
+def search_modifs(commands : list) -> list:
+    """Search the mofiication made on a object"""
+    return [(re.split("=",re.split(":",command)[1])[0],re.split("=",re.split(":",command)[1])[1]) for command in commands]
+
 
 def modifyAttributesSelection(names : list, attributeName : str, attributeArgument : str) -> str:
     selection = "={" + ",".join(names) + "}" + "\n"
-    return selection + "selection.{}={}".format(attributeName, attributeArgument)
+    return selection + "selection.{}={}".format(attributeName, attributeArgument)  
+    
 
-TYPES = {"+ro" : "Room", "+si" : "Site", "+bd" : "Building"}    
+TYPES = {"+ro" : "Room", "+si" : "Site", "+bd" : "Building", "+room" : "Room", "+site" : "Site", "+building" : "Building", "+rk" : "Rack", "+rack" : "Rack"}    
     
 # TERRORIST = {"+ro" : createRoomFromCommand, "+si" : createSiteFromCommand, "+bd" : createBuidlingFromCommand}
 
 if __name__ == "__main__":
     testCommand = "+bd:/P/BASIC/A@[0,0]@0@[24,30,1]"
     #print(readFileOCLI("demo/simu1.ocli", "/P/BASIC/A/R1"))
-    #print(getTypeFromName("demo/simu1.ocli","/P/BASIC"))
-    typeOfCommand, parameters = readCommandOCLI(testCommand)
-    print(parameters)
-    print(convertStringToObjects(parameters))
-    #print(createRoom(parameters))
-    #print(json.loads("[0,0]"))
-    print(getTypeFromName("demo/simu1.ocli","/P/BASIC"))
+    # print(getTypeFromName("demo/simu1.ocli","/P/BASIC"))
     path = "C:\\Users\\lemoi\\Documents\\Cours\\Commande_Entreprise\\GitHub\\OGrEE_NLP\\DEMO.BASIC.ocli"
     commands = getAllNames(path)
     # for command in commands:
     #     print("objet : ",command,"\t| parent : ", getParentName(command))
     objects = objects_in('/P/BASIC/A/R1',path)
-    for obj in objects:
-        print(obj)
+    # for obj in objects:
+    #     print(obj)
+    cmds = getParametersFromName('/P/BASIC/A/R1/B07',path)
+    for cmd in cmds :
+        print(cmd)
