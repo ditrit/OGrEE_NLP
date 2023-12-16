@@ -1,7 +1,4 @@
 import json
-from Room import Room
-from Site import Site
-from Building import Building
 
 def createRoomFromTemplate(name :str, position : list, rotation : int, filename : str) -> str:
     """Creates a Room instance from a json file with a template"""
@@ -90,17 +87,27 @@ def getParametersFromName(name : str, file_name : str) -> dict:
         commands = pattern.findall(text)
         
     copy_cmds = [cmd for cmd in commands if nbOccurences('/',cmd)==nbSlash]
-    match getTypeFromName(name,file_name):
+    object_type = getTypeFromName(name,file_name)
+    creation_cmd = copy_cmds[0] #we suppose that the commaand to create an object is always the first command to appear
+    params = terrorist(readCommandOCLI(creation_cmd))
+    match object_type:
         case "Building":
-            return None
+            if(hasTemplate(object_type,creation_cmd)):
+                params[3] = json.loads(params[3] + ".json")
+            if(len(copy_cmds)>1):
+                modifications = search_modifs(copy_cmds[1:])
         case "Room" :
-            return None
+            if(hasTemplate(object_type,creation_cmd)):
+                params[3] = json.loads(params[3] + ".json")
         case "Site" :
-            return None
+            return params
         case "Rack" :
-            return None
+            if(hasTemplate(object_type,creation_cmd)):
+                params[4] = json.loads(params[4] + ".json")
 
-
+def search_modifs(commands : list) -> list:
+    """Search the mofiication made on a object"""
+    return [(re.split("=",re.split(":",command)[1])[0],re.split("=",re.split(":",command)[1])[1]) for command in commands]
 
 
 def modifyAttributesSelection(names : list, attributeName : str, attributeArgument : str) -> str:

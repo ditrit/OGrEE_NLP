@@ -97,19 +97,26 @@ def isOrientationConform(orientation : str) -> bool:
     """Verifies that the string given in argument is a valid orientation"""
     return orientation in ["N","S","W","E","NW","NE","SW","SE","ESE"
                            "WNW","NNW","NNE","ENE","WSW","SSW","SSE"]
+                           
 def hasTemplate(type : str, command : str) -> bool:
     """Returns true if the given command uses a template"""
-    params = readCommandOCLI(command)
+    params = terrorist(readCommandOCLI(command))
     match type:
         case "Building":
-             
+            if(type(params[3])==str):
+                return True
+            else : return False
         case "Room" :
-            return None
+            if(type(params[3])==str):
+                return True
+            else : return False
         case "Site" :
-            return None
+            return False
         case "Rack" :
-            return None
-
+            if(type(params[4])==str):
+                return True
+            else : return False
+            
 def isSlotConform(slot : str) -> bool:
     return type(slot) == str
 
