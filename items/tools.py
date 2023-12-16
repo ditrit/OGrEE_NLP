@@ -116,7 +116,7 @@ def isSlotConform(slot : str,entity="") -> bool:
     return type(slot) == str
 
 def isTemplateConform(temp :  str,entity="") -> bool:
-    return type(teùmp) == str
+    return type(temp) == str
 
 def isSideConform(side : str,entity="") -> bool:
     return side in ["front", "rear", "frontflipped", "rearflipped"]
