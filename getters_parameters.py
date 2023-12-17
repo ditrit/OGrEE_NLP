@@ -1,24 +1,112 @@
+import spacy
 from spacy.tokens import Doc, Token
+nlp = spacy.load("en_core_web_lg")
 from typing import Optional
 import re
 
 
-def position(processed_entry : Doc, index : int, attachedEntity : str, lastKeyWordIndex : int, nextKeyWordIndex : int) :
-    next_words = processed_entry[index+1:nextKeyWordIndex+1]
-    previous_words = processed_entry[lastKeyWordIndex:index]
+def template(processed_entry : Doc, index : int, attachedEntity : str, lastKeyWordIndex : int, nextKeyWordIndex : int, forbiddenIndexes : list = []) :
+    next_words = [token for token in processed_entry[index+1:nextKeyWordIndex] if token.i not in forbiddenIndexes]
+    previous_words = [token for token in processed_entry[lastKeyWordIndex+1:index] if token.i not in forbiddenIndexes]
+    
+    def isTemplate(token : Token) -> bool :
+        if token.pos_ == "NOUN" or token.pos_ == "PROPN" : return True
+        return False   
+
+    # find the first token of the template name
+    def findNameFirst(processed_entry : Doc, index : int) :
+        name = ""
+        indexes = []
+
+        if list(processed_entry[index].children) : # we first seek in the children
+            for token in processed_entry[index].subtree :
+                tokenRealIndex = list(processed_entry).index(token)
+                if tokenRealIndex in forbiddenIndexes : continue
+                if (isTemplate(token) or 
+                    (tokenRealIndex+2 < len(processed_entry) and processed_entry[tokenRealIndex +1].lower_ == "-")) :
+                    name, indexes = findFullName(processed_entry, tokenRealIndex)
+                    break
+        
+        if not name : # if none found, seek in the next words
+            for token in next_words :
+                tokenRealIndex = list(processed_entry).index(token)
+                if (isTemplate(token) or 
+                    (tokenRealIndex+2 < len(processed_entry) and processed_entry[tokenRealIndex +1].lower_ == "-")) :
+                    name, indexes = findFullName(processed_entry, tokenRealIndex)
+                    break
+        if not name : # finally in the previous
+            for token in previous_words :
+                tokenRealIndex = list(processed_entry).index(token)
+                if (isTemplate(token) or 
+                    (tokenRealIndex+2 < len(processed_entry) and processed_entry[tokenRealIndex +1].lower_ == "-")) :
+                    name, indexes = findFullName(processed_entry, tokenRealIndex)
+                    break
+
+        return name, indexes
+    
+    # find the full name of the template, from the start token
+    def findFullName(processed_entry : Doc, index : int) :
+        name = ""
+        indexes = []
+
+        currentIndex = index
+        isNameFinished = False
+        while not isNameFinished :
+            validIndex = currentIndex not in forbiddenIndexes
+            indexJump = 1
+            # if there is a dash, we take both current and next word (and the dash)
+            if validIndex and currentIndex+2 < len(processed_entry) and processed_entry[currentIndex+1].lower_ == "-" :
+                if currentIndex+1 in forbiddenIndexes or currentIndex+2 in forbiddenIndexes :
+                    currentIndex += 1
+                    continue
+                name = name + processed_entry[currentIndex].lower_ + processed_entry[currentIndex+1].lower_ + processed_entry[currentIndex+2].lower_
+                indexes.extend([currentIndex, currentIndex+1, currentIndex+2])
+                indexJump = 3
+            elif validIndex and isTemplate(processed_entry[currentIndex]) :
+                name = name + processed_entry[currentIndex].lower_ + "-"
+                indexes.append(currentIndex)
+
+            if currentIndex + indexJump > len(processed_entry)-1 : 
+                isNameFinished = True
+            else : 
+                currentIndex += indexJump
+
+        if name[-1] == "-" :
+            name = name[:-1]
+        return name, indexes
+
+    resultValues = ""
+    resultIndexes = []
+
+    # if synonym of "called", start to seek from this token
+    if (index +1 <= len(processed_entry)-1 
+        and processed_entry[index+1].similarity(nlp("called")[0]) > 0.5
+        and processed_entry[index].is_ancestor(processed_entry[index+1])) :
+        resultValues, resultIndexes = findNameFirst(processed_entry, index+1)
+
+    else :
+        resultValues, resultIndexes = findNameFirst(processed_entry, index)
+
+    if not resultValues : 
+        raise Exception("No template value detected")
+    else :
+        return resultValues, resultIndexes
+
+
+def position(processed_entry : Doc, index : int, attachedEntity : str, lastKeyWordIndex : int, nextKeyWordIndex : int, forbiddenIndexes : list = []) :
+    next_words = [token for token in processed_entry[index+1:nextKeyWordIndex] if token.i not in forbiddenIndexes]
+    previous_words = [token for token in processed_entry[lastKeyWordIndex+1:index] if token.i not in forbiddenIndexes]
 
     LENGTH_CRITERIA = [2] 
-    if attachedEntity == "device"  :
-        LENGTH_CRITERIA = [1]
-    if attachedEntity in ["rack", "corridor"] :
-        LENGTH_CRITERIA.append(3)
+    if attachedEntity == "device"  : LENGTH_CRITERIA = [1]
+    if attachedEntity in ["rack", "corridor"] : LENGTH_CRITERIA.append(3)
 
     positionList = []
     for token in next_words :
         foundValue = re.findall("^[-]*[0-9]+[.]*[0-9]*", token.text)
         if foundValue :  
             positionList.append((foundValue[0], token.i))
-    if not len(positionList) in LENGTH_CRITERIA :
+    if not len(positionList) in LENGTH_CRITERIA : # if none found in next words
         positionList = []
         for token in previous_words :
             foundValue = re.findall("^[-]*[0-9]+[.]*[0-9]*", token.text)
@@ -35,11 +123,11 @@ def position(processed_entry : Doc, index : int, attachedEntity : str, lastKeyWo
     return resultValues, resultIndexes
 
 
-def rotation(processed_entry : Doc, index : int, attachedEntity : str, lastKeyWordIndex : int, nextKeyWordIndex : int) :
-    next_words = processed_entry[index+1:nextKeyWordIndex+1]
-    previous_words = processed_entry[lastKeyWordIndex:index]
+def rotation(processed_entry : Doc, index : int, attachedEntity : str, lastKeyWordIndex : int, nextKeyWordIndex : int, forbiddenIndexes : list = []) :
+    next_words = [token for token in processed_entry[index+1:nextKeyWordIndex] if token.i not in forbiddenIndexes]
+    previous_words = [token for token in processed_entry[lastKeyWordIndex+1:index] if token.i not in forbiddenIndexes]
 
-    rotationKeyWords = {"front": [0, 0, 180],
+    rotationKeyWordsDict = {"front": [0, 0, 180],
                         "rear": [0, 0, 0],
                         "left": [0, 90, 0],
                         "right": [0, -90, 0],
@@ -49,13 +137,13 @@ def rotation(processed_entry : Doc, index : int, attachedEntity : str, lastKeyWo
 
     if attachedEntity in ["rack", "corridor"] :
         # seek key words in the dict above
-        rotationKeyWordsList = list(rotationKeyWords.keys())
+        rotationKeyWordsList = list(rotationKeyWordsDict.keys())
         for token in next_words :
             if token.text in rotationKeyWordsList and processed_entry[index].is_ancestor(token) :
-                return rotationKeyWords[token.text]
+                return rotationKeyWordsDict[token.text]
         for token in previous_words :
             if token.text in rotationKeyWordsList and processed_entry[index].is_ancestor(token) :
-                return rotationKeyWords[token.text]
+                return rotationKeyWordsDict[token.text]
 
     LENGTH_CRITERIA = 3 if attachedEntity in ["rack", "corridor"] else 1
     isRotationNegative = False
@@ -85,9 +173,9 @@ def rotation(processed_entry : Doc, index : int, attachedEntity : str, lastKeyWo
         return resultValues, resultIndexes
         
 
-def size(processed_entry : Doc, index : int, attachedEntity : str, lastKeyWordIndex : int, nextKeyWordIndex : int) :
-    next_words = processed_entry[index+1:nextKeyWordIndex+1]
-    previous_words = processed_entry[lastKeyWordIndex:index]
+def size(processed_entry : Doc, index : int, attachedEntity : str, lastKeyWordIndex : int, nextKeyWordIndex : int, forbiddenIndexes : list = []) :
+    next_words = [token for token in processed_entry[index+1:nextKeyWordIndex] if token.i not in forbiddenIndexes]
+    previous_words = [token for token in processed_entry[lastKeyWordIndex+1:index] if token.i not in forbiddenIndexes]
 
     LENGTH_CRITERIA = 3
     if attachedEntity == "pillar" :
@@ -100,7 +188,7 @@ def size(processed_entry : Doc, index : int, attachedEntity : str, lastKeyWordIn
         foundValue = re.findall("^[-]*[0-9]+[.]*[0-9]*", token.text)
         if foundValue :  
             sizeList.append((foundValue[0], token.i))
-    if len(sizeList) != LENGTH_CRITERIA :
+    if len(sizeList) != LENGTH_CRITERIA : # if none found in next words
         sizeList = []
         for token in previous_words :
             foundValue = re.findall("^[-]*[0-9]+[.]*[0-9]*", token.text)
@@ -117,9 +205,9 @@ def size(processed_entry : Doc, index : int, attachedEntity : str, lastKeyWordIn
         return resultValues, resultIndexes
         
 
-def axisOrientation(processed_entry : Doc, index : int, attachedEntity : str, lastKeyWordIndex : int, nextKeyWordIndex : int) :
-    next_words = processed_entry[index+1:nextKeyWordIndex+1]
-    previous_words = processed_entry[lastKeyWordIndex:index]
+def axisOrientation(processed_entry : Doc, index : int, attachedEntity : str, lastKeyWordIndex : int, nextKeyWordIndex : int, forbiddenIndexes : list = []) :
+    next_words = [token for token in processed_entry[index+1:nextKeyWordIndex] if token.i not in forbiddenIndexes]
+    previous_words = [token for token in processed_entry[lastKeyWordIndex+1:index] if token.i not in forbiddenIndexes]
 
     resultIndexes = []
     #An axis Orientation can be any combinason of [+/-]x[+/-]y. eg: +x+y or -x+y
@@ -129,6 +217,7 @@ def axisOrientation(processed_entry : Doc, index : int, attachedEntity : str, la
         if token.lower_ in "".join(axisX + axisY) :
             resultIndexes.append(token.i)
 
+    # if not found in the next words, seek in the previous words
     if len(axisX) not in [0,1] or len(axisY) not in [0,1] or len(axisX)+len(axisY) == 0 :
         resultIndexes = []
         axisX = re.findall("[-\+]?[ ]?x", "".join([token.lower_ for token in previous_words]))
@@ -140,6 +229,7 @@ def axisOrientation(processed_entry : Doc, index : int, attachedEntity : str, la
     if len(axisX) not in [0,1] or len(axisY) not in [0,1] or len(axisX)+len(axisY) == 0 :
         raise Exception("No axisOrientation value detected")
     
+    # if the value is not comprehensive
     resultValues = ""
     if len(axisX) == 0 :
         resultValues = "+x" + axisY[0].replace(" ","")
@@ -150,9 +240,7 @@ def axisOrientation(processed_entry : Doc, index : int, attachedEntity : str, la
     return resultValues, resultIndexes
 
 
-def unit(processed_entry : Doc, index : int, attachedEntity : str, lastKeyWordIndex : int, nextKeyWordIndex : int) :
-    next_words = processed_entry[index+1:nextKeyWordIndex+1]
-    previous_words = processed_entry[lastKeyWordIndex:index]
+def unit(processed_entry : Doc, index : int, attachedEntity : str, lastKeyWordIndex : int, nextKeyWordIndex : int, forbiddenIndexes : list = []) :
 
     DICT_UNIT = {
             "meter" : "m",
@@ -162,20 +250,21 @@ def unit(processed_entry : Doc, index : int, attachedEntity : str, lastKeyWordIn
 
     resultValues = []
     resultIndexes = []
-    #An unit can be m, t , f, meters, tiles, feet
 
-    for token in list(processed_entry[lastKeyWordIndex:nextKeyWordIndex+1]) :
-        if token.lemma_ in DICT_UNIT.keys() :
+    allWords = [token for token in processed_entry[lastKeyWordIndex+1:nextKeyWordIndex] if token.i not in forbiddenIndexes]
+    for token in allWords :
+        if token.lemma_ in DICT_UNIT.keys() : # if whole word
             resultValues.append(DICT_UNIT[token.lemma_])
             resultIndexes.append(token.i)
-        if token.lower_ in DICT_UNIT.values() :
+        if token.lower_ in DICT_UNIT.values() : # if only a letter
             resultValues.append(token.lower_)
             resultIndexes.append(token.i)
 
-    # TODO : meter etc in the key words ??
-        
-    if not resultValues :
+    if len(resultValues) != 1 :
         raise Exception("No unit value detected")
     else :
-        return resultValues[0]
+        return resultValues[0], resultIndexes
+    
 
+def slot(processed_entry : Doc, index : int, attachedEntity : str, lastKeyWordIndex : int, nextKeyWordIndex : int, forbiddenIndexes : list = []) :
+    return template(processed_entry, index, attachedEntity, lastKeyWordIndex, nextKeyWordIndex, forbiddenIndexes)
