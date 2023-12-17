@@ -1,5 +1,6 @@
 """This module contains methods to create commands from parameters for racks"""
 
+import json
 from Component import Component
 from tools import isConform
 from math import *
