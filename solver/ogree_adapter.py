@@ -1,6 +1,6 @@
 import json
 import re
-from tools import nbOccurences, hasTemplate
+from tools import hasTemplate, nbOccurences
 
 def createRoomFromTemplate(name :str, position : list, rotation : int, filename : str) -> str:
     """Creates a Room instance from a json file with a template"""
