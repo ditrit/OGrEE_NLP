@@ -1,4 +1,4 @@
-from Component import Component
+from solver.Component import Component
 
 class Tag(Component):
 

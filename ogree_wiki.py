@@ -8,7 +8,10 @@ ENTITIES = {
             "device" : "dv",
             "group" : "gr",
             "corridor" : "co",
-            "tag" : "tag"
+            "tag" : "tag",
+            "pillar" : "pillars",
+            "label" : "label",
+            "separator" : "separators"
             }
 
 PARAMETERS_NAME = {
@@ -16,10 +19,10 @@ PARAMETERS_NAME = {
                             "optional" : ["orientation"]
                             },
                 "building" : {  "mandatory" : ["name","position","rotation"], 
-                                "optional" : ["size","template"]
+                                "optional" : ["size","template","usableColor","reservedColor","technicalColor"]
                                 },
                 "room" : {  "mandatory" : ["name","position","rotation"], 
-                            "optional" : ["size", "axisOrientation", "floorUnit"]
+                            "optional" : ["size", "axisOrientation", "floorUnit","reserved","technical"]
                             },
                 "rack" : {  "mandatory" : ["name", "position", "unit","rotation"],
                             "optional" : ["size","template"]
@@ -35,7 +38,19 @@ PARAMETERS_NAME = {
                 "tag" :     {
                             "mandatory" : ["name","color"],
                             "optional" : []
-                            }
+                            },
+                "pillar" :  {
+                            "mandatory" : ["name", "position", "size","rotation"],
+                            "optional"  : []
+                },
+                "label" :  {
+                            "mandatory" : [],
+                            "optional"  : ["attribute","font","background","name"]
+                },
+                "separator" : {
+                            "mandatory" : ["name","startPosition","endPosition","wall"],
+                            "optional"  :[]
+                }
                 }
 
 PARAMETERS_FORMAT = {
@@ -196,7 +211,39 @@ PARAMETERS_FORMAT = {
                                 "type" : [str],
                                 "value" : ["cold", "warm"],
                                 },
-                        }     
+                        },
+                "tag" : {
+                        "name" : {
+                                "description" : "name of the tag. Replace slug",
+                                "type" : [str]
+                        },
+                        "color" : {
+                                "description" : "color of the tag",
+                                "type" : [str]
+                        }
+                        },
+                "pillar" : {
+                    "name" : {
+                                    "description" : "name of the pillar without blankspaces",
+                                    "type" : [str],
+                                    },
+                        "position" : {
+                                        "description" : "vector [x,y] in m, float",
+                                        "type" : [list],
+                                        "len" : [2],
+                                        "type_value" : [float, int]
+                                        },
+                        "rotation" : {
+                                        "description" : "rotation of the pillar",
+                                        "type" : [float, int]
+                                        },
+                        "size" : {
+                                    "description" : "vector [width,height] in m",
+                                    "type" : [list],
+                                    "len" : [2],
+                                    "type_value" : [float, int]
+                                    },
+                }
 }           
                 
 

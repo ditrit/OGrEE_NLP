@@ -1,4 +1,4 @@
-from Component import Component
+from solver.Component import Component
 
 class Corridor(Component):
     rotation_possible = {"LEFT" : [0,90,0], "RIGHT": [0,-90,0], "FRONT" : [0,0,180], "REAR": [0,0,0] , "TOP": [90,0,0],

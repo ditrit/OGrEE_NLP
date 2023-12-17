@@ -1,7 +1,8 @@
 """This module contains static tools for the different classes"""
 
 import re
-from ogree_adaptater import *
+from solver.ogree_adapter import *
+import json
 
 def create(typeOfObject : str, parameters : dict) -> str:
     """Creates an object from given parameters"""
@@ -144,7 +145,7 @@ def getParametersFromTemplate(name : str) -> dict:
 
 def number_of_parameters(command : str):
     """Returns the number of parameters in a command"""
-    paramaters = re.split(":",command)[1]
+    parameters = re.split(":",command)[1]
     return len(re.split('@',parameters))
 
 def getParentName(completeName : str) -> str:

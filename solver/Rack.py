@@ -1,6 +1,9 @@
 """This module contains methods to create commands from parameters for racks"""
 
+import json
 from Component import Component
+from items.Device import Device
+from Group import Group
 from tools import isConform
 from math import *
 
@@ -45,33 +48,16 @@ class Rack(Component):
                 print(e)
 
     def get_vertices(self):
-        if len(self.position == 2):
-            x,y = self.position
-        if len(self.position == 3):
-            x,y,z = self.position
-        # Calculation of the vectors of the rectangles
-        half_width,half_length = self.getFloorDimensions()/2
-        #TO DO : add clearance parameter
-
-        # Sides vectors before rotation
-        u1 = (half_width, 0)
-        u2 = (0, half_length)
-        
-        # Angles to rotate
-        cos_theta = math.cos(self.rotation[2])
-        sin_theta = math.sin(self.rotation[2])
-
-        # Sides vectors after rotation
-        v1 = (u1[0] * cos_theta - u1[1] * sin_theta, u1[0] * sin_theta + u1[1] * cos_theta)
-        v2 = (u2[0] * cos_theta - u2[1] * sin_theta, u2[0] * sin_theta + u2[1] * cos_theta)
-
-        # Vertices coordinates
-        vertex1 = (x - v1[0] - v2[0], y - v1[1] - v2[1])
-        vertex2 = (x + v1[0] - v2[0], y + v1[1] - v2[1])
-        vertex3 = (x + v1[0] + v2[0], y + v1[1] + v2[1])
-        vertex4 = (x - v1[0] + v2[0], y - v1[1] + v2[1])
-
-        return vertex1, vertex2, vertex3, vertex4
+        """Returns the vertices of the rectangle taking the clearance into account"""
+        x0,y0 = self.position
+        L, l = self.getFloorDimensions
+        alpha = self.rotation[2]
+        cFr, cRe, cLe, cRi = self.clearance[0], self.clearance[1], self.clearance[2], self.clearance[3]
+        right_front = [x0 + cos(alpha)*(L + cRi) + sin(alpha)*cRe,       y0 - cos(alpha)*cRe + sin(alpha)*(L + cRi)]
+        right_rear =  [x0 + cos(alpha)*(L + cRi) - sin(alpha)*(l + cFr), y0 + cos(alpha)*(l + cFr) + sin(alpha)*(L + cRi)]
+        left_front =  [x0 - cos(alpha)*cLe - sin(alpha)*(l + cFr),       y0 + cos(alpha)*(l + cFr) - sin(alpha)*cLe]
+        left_rear =   [x0 - cos(alpha)*cLe + sin(alpha)*cRe,             y0 - cos(alpha)*cRe - sin(alpha)*cLe]
+        return [right_front,right_rear,left_front,left_rear]
     
     def isConform(self):
         boolean = super().isConform()     
