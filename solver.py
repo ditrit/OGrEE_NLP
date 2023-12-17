@@ -3,7 +3,20 @@ from items.Room import Room
 from items.Rack import Rack
 
 ######################################## Methods to place an object next to a sibling ###################################################
+def get_line_coeff(p1,p2):
+    """ return a and b for an equation ax+b = y knowing two solutions of the equation"""
+    if p1[0] == p2[0] and p1[1] == p2[1]:
+        raise ValueError("Same point given two times")
+    else:
+        if p1[0] == p2[0]:
+            return 'vertical line'
+        else:
+            return (float((p2[1]-p1[1])/(p2[0]-p1[0])) , float((p1[1]*p2[0]-p1[0]*p2[1])/(p2[0]-p1[0])))
 
+
+
+
+        
 if __name__ == "main":
     # print(name_to_object("/P/BASIC/A/R1/A01",'DEMO.BASIC.ocli'))
     #path = 'C:\\Users\\lemoi\\Documents\\Cours\\Commande_Entreprise\\GitHub\\OGrEE_NLP\\items\\schneider-ns1000n.json'

@@ -45,7 +45,33 @@ class Rack(Component):
                 print(e)
 
     def get_vertices(self):
-        x0,y0 = self.position
+        if len(self.position == 2):
+            x,y = self.position
+        if len(self.position == 3):
+            x,y,z = self.position
+        # Calculation of the vectors of the rectangles
+        half_width,half_length = self.getFloorDimensions()/2
+        #TO DO : add clearance parameter
+
+        # Sides vectors before rotation
+        u1 = (half_width, 0)
+        u2 = (0, half_length)
+        
+        # Angles to rotate
+        cos_theta = math.cos(self.rotation[2])
+        sin_theta = math.sin(self.rotation[2])
+
+        # Sides vectors after rotation
+        v1 = (u1[0] * cos_theta - u1[1] * sin_theta, u1[0] * sin_theta + u1[1] * cos_theta)
+        v2 = (u2[0] * cos_theta - u2[1] * sin_theta, u2[0] * sin_theta + u2[1] * cos_theta)
+
+        # Vertices coordinates
+        vertex1 = (x - v1[0] - v2[0], y - v1[1] - v2[1])
+        vertex2 = (x + v1[0] - v2[0], y + v1[1] - v2[1])
+        vertex3 = (x + v1[0] + v2[0], y + v1[1] + v2[1])
+        vertex4 = (x - v1[0] + v2[0], y - v1[1] + v2[1])
+
+        return vertex1, vertex2, vertex3, vertex4
     
     def isConform(self):
         boolean = super().isConform()     
@@ -93,14 +119,14 @@ class Rack(Component):
                 group.addComponent(compo)
                 self.components.append(group)
 
-    def getFloorArea(self):
+    def getFloorDimensions(self):
         """Returns the floor area of a given component."""
         if(self.rotation == "rear" or self.rotation == "front"):
-            return self.size[0]*self.size[1]
+            return self.size[0],self.size[1]
         elif(self.rotation == "top" or self.rotation == "bottom"):
-            return self.size[0]*self.size[2]
+            return self.size[0],self.size[2]
         elif(self.rotation == "left" or self.rotation == "right"):
-            return self.size[1]*self.size[2]
+            return self.size[1],self.size[2]
             
     def possible_next_to(self):
         positions = []
