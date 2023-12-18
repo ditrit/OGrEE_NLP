@@ -27,8 +27,6 @@ class Room(Component) :
     def addSeparator(self,name : str,startPos : list,endPos : list, typeOfSeparator):
         self.separators[name] = {"startPos" : startPos, "endPos" : endPos, "type" : typeOfSeparator}
 
-    def addCorridor(self,name : str,pos : list,unit : list, rotation : str | list, size : list, temperature : str):
-        pass
 
 
     def set_vertices_from_template(template):

@@ -58,11 +58,6 @@ def getTypeFromName(filename : str, name : str):
     in case a name is used for different objects"""
     k, line = readFileOCLI(filename, name)
     typeOfCommand, parameters = readCommandOCLI(line)
-    print("typeOfCommand, param",  typeOfCommand, parameters)
-    #only the separator has to havefor last argument plain or wireframe.
-    if bool(re.compile(r"plain|wireframe").match(parameters[-1])):
-        raise Exception("dsdfgrzgetzheryj")
-        return "Separator"
     return TYPES[typeOfCommand] if typeOfCommand in TYPES.keys() else ""
 
 def getAllNames(file_name : str) -> list:
@@ -193,22 +188,64 @@ def createListObject(room_name : str, path : str) -> list:
                         list_object.append(new_object)       
                 else:
                     raise Exception( "A corridor should have 6 arguments")
-            case "Separator":
-                if len(entity_list) == 4 :
-                    obj_room.addSeparator(getNameSeparator(entity_list[0]),entity_list[1], entity_list[2], entity_list[3])
+    #Commands to create a separator and a pillar are a bit special so we have to treat them separetly
+    list_pillars_sepa = getAllParametersSeparatorsPillarsInRoom(room_name, path)
+    print(list_pillars_sepa)
+    for command in list_pillars_sepa:
+        entity_type = TYPES[command[0]] if command[0] in TYPES.keys() else ""
+        parameters = terrorist(command[1])
+        match entity_type:
+            case "Pillar":
+                if len(parameters) ==4:
+                    obj_room.addPillar(parameters[0],parameters[1],parameters[2],parameters[3])
                 else:
-                    raise Exception("A separator should have 4 arguments")
-    print("Separators : " ,obj_room.separators)    
+                    raise Exception("A pillar should have 4 parameters")
+            case "Separator":
+                if len(parameters) ==4:
+                    obj_room.addSeparator(parameters[0],parameters[1],parameters[2],parameters[3])
+                else:
+                    raise Exception("A separator should have 4 parameters")
     return obj_room, list_object
 
 
 def getNameSeparator(name :str) -> str:
     return texte.split('=')[1]
 
+def getAllSeparatorsPillars(path : str) -> list:
+    """Returns all the pillars and Separators present in the ocli files"""
+    with open(path, "r") as file:
+        text = file.read()
+        pattern = re.compile(r'.*separators[+]=.*|.*pillars[+]=.*', re.MULTILINE)
+        commands = pattern.findall(text)
+    #names = [re.split('@',re.split(':',c)[1])[0] for c in commands]
+    return commands
+
+def getAllSeparatorsPillarsInRoom(room : str, path : str) -> list:
+    """Return all the pillars and separators in the room room"""
+    commands = getAllSeparatorsPillars(path)
+    in_room = []
+    for command in commands:
+        name_room = re.split(':',command)[0]
+        if re.search(name_room,room):
+                in_room.append(command)
+    return in_room
+
+def getAllParametersSeparatorsPillarsInRoom(room : str, path : str) -> list:
+    """Return all the parameters of the pillars and separators in the room room"""
+    commands = getAllSeparatorsPillarsInRoom(room, path)
+    in_room = []
+    for command in commands:
+        type_command, params = re.split('=',command)[0], re.split('=',command)[1]
+        list_param = []
+        for parameter in re.split('@',params):
+            list_param.append(parameter)
+        in_room.append((re.split(':',type_command)[1],list_param))
+    return in_room
+
 
 
 TYPES = {"+ro" : "Room", "+si" : "Site", "+bd" : "Building", "+room" : "Room", "+site" : "Site", "+building" : "Building", "+rk" : "Rack", "+rack" : "Rack",
- "+gr" : "Group", "+corridor" : "Corridor", "+co" : "Corridor", "pillar+" : "Pillar", "separators+" : "Separator" }    
+ "+gr" : "Group", "+corridor" : "Corridor", "+co" : "Corridor", "pillars+" : "Pillar", "separators+" : "Separator" }    
     
 # TERRORIST = {"+ro" : createRoomFromCommand, "+si" : createSiteFromCommand, "+bd" : createBuidlingFromCommand}
 
@@ -220,15 +257,21 @@ if __name__ == "__main__":
   #  path = "C:\\Users\\lemoi\\Documents\\Cours\\Commande_Entreprise\\GitHub\\OGrEE_NLP\\DEMO.BASIC.ocli"
     path = r"C:\Users\Admin\Desktop\dossier\DEMO_BASIC.ocli"
     #print("getName : ",getTypeFromName(path,"SEPA1"))
-  #  commands = getAllNames(path)
+    #print(getAllParametersSeparatorsPillarsInRoom("/P/BASIC/A/R1",path))
+    #print(getAllSeparatorsPillars(path))
+    #commands = getAllNames(path)
+    #print(commands)
     # for command in commands:
     #     print("objet : ",command,"\t| parent : ", getParentName(command))
-  #  objects = objects_in('/P/BASIC/A/R1',path)
-    # for obj in objects:
-    #     print(obj)
+    #objects = objects_in('/P/BASIC/A/R1',path)
+    #print(objects)
+    #for obj in objects:
+     #    print(obj)
    # cmds = getParametersFromName('/P/BASIC/A/R1/B07',path)
-    print(getAllElementParameters('/P/BASIC/A/R1',path))
-    #list_object_Ocli = createListObject('/P/BASIC/A/R1',path)
-    #print(list_object_Ocli)
+   # print(getAllElementParameters('/P/BASIC/A/R1',path))
+    room, list_object_Ocli = createListObject('/P/BASIC/A/R1',path)
+    print(list_object_Ocli)
+    print("Separators : ", room.separators)
+    print("Pillar : ", room.pillars) 
    # for cmd in cmds :
    #     print(cmd)
