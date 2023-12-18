@@ -10,10 +10,12 @@ def getChildren(room):
                 lst = line.split("/")
                 test = True
                 for i in range(len(nameLst)):
-                    if nameLst[i] != lst[i+1]:
+                    if i+1 < len(lst) and nameLst[i] != lst[i+1]:
                         test = False
-                if test:
-                    childrens.add(line) #A voir comment on traite la ligne, si on al convertit en Rack
+                if test and len(lst) == 6: #Only keep the rack and not the device
+                    print(lst[5])
+                    childrens.append(line) #Can be convert in Rack maybe ?
+        print(len(childrens))
     #TODO : enlever les objets et voir les modifications -> est ce qu'on ne recréerait pas un jumeau numérique ?
 
 getChildren("a")
