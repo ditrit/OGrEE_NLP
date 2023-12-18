@@ -1,9 +1,8 @@
 """This module contains methods to create commands from parameters for racks"""
 
 import json
-from Component import Component
-from items.Device import Device
-from Group import Group
+from solver.Component import Component
+from solver.Device import Device
 from tools import isConform
 from math import *
 
@@ -50,7 +49,7 @@ class Rack(Component):
     def get_vertices(self):
         """Returns the vertices of the rectangle taking the clearance into account"""
         x0,y0 = self.position
-        L, l = self.getFloorDimensions
+        L, l = self.getFloorDimensions()
         alpha = self.rotation[2]
         cFr, cRe, cLe, cRi = self.clearance[0], self.clearance[1], self.clearance[2], self.clearance[3]
         right_front = [x0 + cos(alpha)*(L + cRi) + sin(alpha)*cRe,       y0 - cos(alpha)*cRe + sin(alpha)*(L + cRi)]

@@ -1,4 +1,4 @@
-from items.Component import Component
+from solver.Component import Component
 import json
 # from items.tools import *
 # from items.ogree_adapter import *
