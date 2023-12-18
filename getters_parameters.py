@@ -11,7 +11,8 @@ def template(processed_entry : Doc, index : int, attachedEntity : str, lastKeyWo
     previous_words = [token for token in processed_entry[lastKeyWordIndex+1:index] if token.i not in forbiddenIndexes]
     
     def isTemplate(token : Token) -> bool :
-        if token.pos_ == "NOUN" or token.pos_ == "PROPN" : return True
+        if token.pos_ in ["NOUN", "PROPN", "PUNCT", "X"] and token.text != "," : 
+            return True
         return False   
 
     # find the first token of the template name
@@ -23,23 +24,20 @@ def template(processed_entry : Doc, index : int, attachedEntity : str, lastKeyWo
             for token in processed_entry[index].subtree :
                 tokenRealIndex = list(processed_entry).index(token)
                 if tokenRealIndex in forbiddenIndexes : continue
-                if (isTemplate(token) or 
-                    (tokenRealIndex+2 < len(processed_entry) and processed_entry[tokenRealIndex +1].lower_ == "-")) :
+                if isTemplate(token) :
                     name, indexes = findFullName(processed_entry, tokenRealIndex)
                     break
         
         if not name : # if none found, seek in the next words
             for token in next_words :
                 tokenRealIndex = list(processed_entry).index(token)
-                if (isTemplate(token) or 
-                    (tokenRealIndex+2 < len(processed_entry) and processed_entry[tokenRealIndex +1].lower_ == "-")) :
+                if isTemplate(token) :
                     name, indexes = findFullName(processed_entry, tokenRealIndex)
                     break
         if not name : # finally in the previous
             for token in previous_words :
                 tokenRealIndex = list(processed_entry).index(token)
-                if (isTemplate(token) or 
-                    (tokenRealIndex+2 < len(processed_entry) and processed_entry[tokenRealIndex +1].lower_ == "-")) :
+                if isTemplate(token) :
                     name, indexes = findFullName(processed_entry, tokenRealIndex)
                     break
 
@@ -55,25 +53,31 @@ def template(processed_entry : Doc, index : int, attachedEntity : str, lastKeyWo
         while not isNameFinished :
             validIndex = currentIndex not in forbiddenIndexes
             indexJump = 1
-            # if there is a dash, we take both current and next word (and the dash)
-            if validIndex and currentIndex+2 < len(processed_entry) and processed_entry[currentIndex+1].lower_ == "-" :
-                if currentIndex+1 in forbiddenIndexes or currentIndex+2 in forbiddenIndexes :
-                    currentIndex += 1
+            # if there is a dash, we take both last and next word (and the dash)
+            if (validIndex 
+                and processed_entry[currentIndex].lower_ in ["-","/","\\"]
+                and currentIndex +1 < nextKeyWordIndex
+                and currentIndex -1 > lastKeyWordIndex) :
+                if (not validIndex) or currentIndex+1 in forbiddenIndexes or currentIndex-1 in forbiddenIndexes :
                     continue
-                name = name + processed_entry[currentIndex].lower_ + processed_entry[currentIndex+1].lower_ + processed_entry[currentIndex+2].lower_
-                indexes.extend([currentIndex, currentIndex+1, currentIndex+2])
-                indexJump = 3
-            elif validIndex and isTemplate(processed_entry[currentIndex]) :
-                name = name + processed_entry[currentIndex].lower_ + "-"
+                if not currentIndex-1 in indexes :
+                    name += processed_entry[currentIndex-1].lower_
+                    indexes.append(currentIndex-1)
+                name += processed_entry[currentIndex].lower_ + processed_entry[currentIndex+1].lower_
+                indexes.extend([currentIndex, currentIndex+1])
+                indexJump = 2
+            elif validIndex and (isTemplate(processed_entry[currentIndex]) or processed_entry[currentIndex].pos_ == "NUM") :
+                name += "-" + processed_entry[currentIndex].lower_
                 indexes.append(currentIndex)
+            else :
+                isNameFinished = True
 
             if currentIndex + indexJump > len(processed_entry)-1 : 
                 isNameFinished = True
             else : 
                 currentIndex += indexJump
-
-        if name[-1] == "-" :
-            name = name[:-1]
+        if name[-1] == "-" : name = name[:-1]
+        if name[0] == "-" : name = name[1:]
         return name, indexes
 
     resultValues = ""
