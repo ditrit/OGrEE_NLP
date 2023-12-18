@@ -1,48 +1,138 @@
 import re
 
 ENTITIES = {
+            "tenant" : "tn",
             "site" : "si",
             "building" : "bd",
             "room" : "ro",
             "rack" : "rk",
             "device" : "dv",
             "group" : "gr",
-            "corridor" : "co"
+            "corridor" : "co",
+            "tag" : "tag",
+            "pillar" : "pillars",
+            "label" : "label",
+            "separator" : "separators"
             }
 
 PARAMETERS_NAME = {
-                "site" : {  "mandatory" : ["name"], 
+                "tenant" : {"mandatory" : ["name","color"],
                             "optional" : []
                             },
+                "site" : {  "mandatory" : ["name"], 
+                            "optional" : ["orientation"]
+                            },
                 "building" : {  "mandatory" : ["name","position","rotation"], 
-                                "optional" : ["size"]
+                                "optional" : ["size","template"]
                                 },
                 "room" : {  "mandatory" : ["name","position","rotation"], 
                             "optional" : ["size", "axisOrientation", "floorUnit"]
                             },
+                "rack" : {  "mandatory" : ["name", "position", "unit","rotation"],
+                            "optional" : ["size","template"]
+                            },
+                "device" : {
+                            "mandatory" : ["name"],
+                            "optional" : ["position","size","template","slot","side"]
+                            },
+                "corridor" : {
+                            "mandatory" : ["name", "position", "unit","rotation","size","temperature"],
+                            "optional" : []
+                            },
+                "tag" :     {
+                            "mandatory" : ["name","color"],
+                            "optional" : []
+                            },
+                "pillar" :  {
+                            "mandatory" : ["name", "position", "size","rotation"],
+                            "optional"  : []
+                },
+                "label" :  {
+                            "mandatory" : [],
+                            "optional"  : ["attribute","font","background","name"]
+                },
+                "separator" : {
+                            "mandatory" : ["name","startPosition","endPosition","type"],
+                            "optional"  :[]
+                }
                 }
 
+COLORS_HEX_BASIC = {
+    'red': '#FF0000',
+    'green': '#00FF00',
+    'blue': '#0000FF',
+    'white': '#FFFFFF',
+    'black': '#000000',
+    'yellow': '#FFFF00',
+    'purple': '#800080',
+    'orange': '#FFA500',
+    'pink': '#FFC0CB',
+    'brown': '#A52A2A',
+    'cyan': '#00FFFF',
+    'gray': '#808080',
+    'grey': '#808080'
+}
+
 PARAMETERS_FORMAT = {
-                        "site" : {
-                                    "name" : {
-                                                "description" : "name of the site without blankspaces",
-                                                "type" : [str],
-                                                }
+                "tenant" : {
+                    "name" : {
+                        "description" : "name of the tenant without blankspaces",
+                        "type" : [str]
+                    },
+                    "color" : {
+                        "description" : "hexadecimal color code for the tenant (e.g #ff0000)",
+                        "type" : [str]
+                    }
+
+                },
+                "site" : {
+                            "name" : {
+                                        "description" : "name of the site without blankspaces",
+                                        "type" : [str],
+                                        }
+                            },
+                "building" : {
+                        "name" : {
+                                    "description" : "name of the building without blankspaces",
+                                    "type" : [str],
                                     },
-                        "building" : {
+                        "position" : {
+                                        "description" : "vector [x,y] in m, float",
+                                        "type" : [list],
+                                        "len" : [2],
+                                        "type_value" : [float, int]
+                                        },
+                        "rotation" : {
+                                        "description" : "rotation of the building from its lower left corner in degrees",
+                                        "type" : [float, int]
+                                        },
+                        "size" : {
+                                    "description" : "vector [width, length, height] in m",
+                                    "type" : [list],
+                                    "len" : [3],
+                                    "type_value" : [float, int]
+                                    },
+                        "template" : {
+                                        "description" : "name of the template",
+                                        "type" : [str],
+                                        }
+                        },
+                        "rack" : {
                                         "name" : {
                                                     "description" : "name of the building without blankspaces",
                                                     "type" : [str],
                                                     },
                                         "position" : {
-                                                        "description" : "vector [x,y] in m, float",
+                                                        "description" : "vector [x,y] or [x,y,z] in m, float",
                                                         "type" : [list],
-                                                        "len" : 2,
+                                                        "len" : [2,3],
                                                         "type_value" : [float, int]
                                                         },
                                         "rotation" : {
                                                         "description" : "rotation of the building from its lower left corner in degrees",
-                                                        "type" : [float, int]
+                                                        "type" : [list, str],
+                                                        "len"  : 3,
+                                                        "type_value" : [float,int]
                                                         },
                                         "size" : {
                                                     "description" : "vector [width, length, height] in m",
@@ -54,8 +144,138 @@ PARAMETERS_FORMAT = {
                                                         "description" : "name of the template",
                                                         "type" : [str],
                                                         }
-                                        }
+                        },
+                "room" : {
+                        "name" : {
+                                "description" : "name of the room without blankspaces",
+                                "type" : [str],
+                                },
+                        "position" : {
+                                "description" : "vector [x,y] in m, float",
+                                "type" : [list],
+                                "len" : [2],
+                                "type_value" : [float, int]
+                                },
+                        "rotation" : {
+                                "description" : "rotation of the room from its lower left corner in degrees",
+                                "type" : [float, int]
+                                },
+                        "size" : {
+                                "description" : "vector [width, length, height] in m",
+                                "type" : [list],
+                                "len" : [3],
+                                "type_value" : [float, int]
+                                },
+                        "axisOrientation" : {
+                                "description" : "orientation of the rows and columns",
+                                "type" : [str],
+                                },
+                        "floorUnit" : {
+                                "description" : "unit type on the floor for the room",
+                                "type" : [str],
+                                "value" : ["t", "m", "f"]
+                                },        
+                        "template" : {
+                                "description" : "name of the template",
+                                "type" : [str],
+                                }
+                        },
+                "device" : {
+                        "name" : {
+                                "description" : "name of the device without blankspaces",
+                                "type" : [str],
+                                },
+                        "slot" : {
+
+                                },
+                        "side" : {
+
+                                },
+                        "posU" : {
+
+                                },
+                        "sizeU" : {
+
+                                },     
+                        "template" : {
+                                "description" : "name of the template",
+                                "type" : [str],
+                                } 
+                        },
+                "group" : {
+                        "name" : {
+                                "description" : "name of the group without blankspaces",
+                                "type" : [str],
+                                },
+                        "nameChildren" : {
+                                "description" : "name of the children in the group",
+                                "type" : [list],
+                                "type_value" : [str],
+                                },
+                        },
+                "corridor" : {
+                        "name" : {
+                                "description" : "name of the corridor without blankspaces",
+                                "type" : [str],
+                                },
+                        "position" : {
+                                "description" : "vector [x,y] or [x,y,z] in m, float",
+                                "type" : [list],
+                                "len" : [2, 3],
+                                "type_value" : [float, int]
+                                },
+                        "rotation" : {
+                                "description" : "rotation of the corridor from its lower left corner in degrees",
+                                "type" : [list],
+                                "len" : [3],
+                                "type_value" : [float, int]
+                                },
+                        "size" : {
+                                "description" : "vector [width, length, height] in m",
+                                "type" : [list],
+                                "len" : [3],
+                                "type_value" : [float, int]
+                                },
+                        "temperature" : {
+                                "description" : "temperature of the corridor",
+                                "type" : [str],
+                                "value" : ["cold", "warm"],
+                                },
+                        },
+                "tag" : {
+                        "name" : {
+                                "description" : "name of the tag. Replace slug",
+                                "type" : [str]
+                        },
+                        "color" : {
+                                "description" : "color of the tag",
+                                "type" : [str]
                         }
+                        },
+                "pillar" : {
+                    "name" : {
+                                    "description" : "name of the pillar without blankspaces",
+                                    "type" : [str],
+                                    },
+                        "position" : {
+                                        "description" : "vector [x,y] in m, float",
+                                        "type" : [list],
+                                        "len" : [2],
+                                        "type_value" : [float, int]
+                                        },
+                        "rotation" : {
+                                        "description" : "rotation of the pillar",
+                                        "type" : [float, int]
+                                        },
+                        "size" : {
+                                    "description" : "vector [width,height] in m",
+                                    "type" : [list],
+                                    "len" : [2],
+                                    "type_value" : [float, int]
+                                    },
+                }
+}           
+                
 
 def makeDictParam(entity : str) -> dict :
     dictio = {}
@@ -94,6 +314,7 @@ def conformityList(dictio_conformity : dict, entry_list) :
         boolean = boolean and (type(entry) in dictio_conformity["type_value"])
     return boolean
 
+"""
 class Site :
     def __init__(self, name : str) :
         self.name = name
@@ -165,6 +386,7 @@ class Room :
     def addPillar(self, name : str, center : list, size : list, rotation : int) -> None:
         #TO DO : Quentin
         pass
+"""
 """
 class Rack:
     rotation_possible = {"LEFT" : [0,90,0], "RIGHT": [0,-90,0], "FRONT" : [0,0,180], "REAR": [0,0,0] , "TOP": [90,0,0],
