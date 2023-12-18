@@ -1,4 +1,4 @@
-from solver.Component import Component
+from Component import Component
 
 class Corridor(Component):
     rotation_possible = {"LEFT" : [0,90,0], "RIGHT": [0,-90,0], "FRONT" : [0,0,180], "REAR": [0,0,0] , "TOP": [90,0,0],
@@ -12,6 +12,9 @@ class Corridor(Component):
         self.size = size
         self.temperature = temperature
 
+    def __repr__(self):
+        return f"{self.__class__.__name__}(name={self.name},position={self.position},unit={self.unit},rotation={self.corridor_rotation},size={self.size})"
+    
     def isConform(self):
         boolean = True
         

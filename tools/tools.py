@@ -1,7 +1,6 @@
 """This module contains static tools for the different classes"""
 
 import re
-from solver.ogree_adapter import *
 import json
 
 def create(typeOfObject : str, parameters : dict) -> str:
@@ -9,6 +8,15 @@ def create(typeOfObject : str, parameters : dict) -> str:
     if not isConform(parameters):
         raise ValueError("The parameters given are invalid for the object of type :" + typeOfObject)
     return "+{}:".format(typeOfObject) + "@".join([str(parameters[key]) for key in parameters.keys()])
+
+def terrorist(parameters : list):
+    reifiedParameters = []
+    for parameter in parameters:
+        try:
+            reifiedParameters.append(json.loads(parameter))
+        except json.decoder.JSONDecodeError:
+            reifiedParameters.append(parameter)
+    return reifiedParameters
 
 def delete(typeOfObject : str, parameters : dict) -> str:
     """Deletes an object from given parameters
@@ -99,24 +107,6 @@ def isOrientationConform(orientation : str) -> bool:
     return orientation in ["N","S","W","E","NW","NE","SW","SE","ESE"
                            "WNW","NNW","NNE","ENE","WSW","SSW","SSE"]
                            
-def hasTemplate(type : str, command : str) -> bool:
-    """Returns true if the given command uses a template"""
-    params = terrorist(readCommandOCLI(command))
-    match type:
-        case "Building":
-            if(type(params[3])==str):
-                return True
-            else : return False
-        case "Room" :
-            if(type(params[3])==str):
-                return True
-            else : return False
-        case "Site" :
-            return False
-        case "Rack" :
-            if(type(params[4])==str):
-                return True
-            else : return False
             
 def isSlotConform(slot : str) -> bool:
     return type(slot) == str

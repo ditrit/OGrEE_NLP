@@ -1,4 +1,4 @@
-from solver.Component import Component
+from Component import Component
 
 class Device(Component):
     

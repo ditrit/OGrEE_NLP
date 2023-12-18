@@ -1,5 +1,8 @@
-from solver.Component import Component
+
+from Component import Component
+
 import json
+
 # from items.tools import *
 # from items.ogree_adapter import *
 
@@ -7,7 +10,7 @@ def produit_vectoriel(u, v):
         return u[0] * v[1] - u[1] * v[0]
 
 class Room(Component) :
-    def __init__(self,name,position,rotation,size,technical_area = [0,0,0,0],reserved_area = [0,0,0,0],separators = {},pillars = {},vertices = []):
+    def __init__(self,name,position,rotation,size,technical_area = [0,0,0,0],reserved_area = [0,0,0,0],separators = {},pillars = {},corridor = {}, vertices = []):
         super().__init__(name,position,rotation,size)
         self.technical_area = technical_area
         self.reserved_area = reserved_area
@@ -25,6 +28,10 @@ class Room(Component) :
     
     def addSeparator(self,name : str,startPos : list,endPos : list, typeOfSeparator):
         self.separators[name] = {"startPos" : startPos, "endPos" : endPos, "type" : typeOfSeparator}
+
+    def addCorridor(self,name : str,pos : list,unit : list, rotation : str | list, size : list, temperature : str):
+        pass
+
 
     def set_vertices_from_template(template):
         return super().set_param_from_template(template,'vertices')

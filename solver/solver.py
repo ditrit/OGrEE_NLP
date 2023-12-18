@@ -1,7 +1,10 @@
 import re, json, sys
-from items.Room import Room
-from items.Rack import Rack
+
+from Room import Room
+from Rack import Rack
+
 from pulp import LpVariable, LpProblem, LpBinary
+
 
 
 ######################################## Methods to place an object next to a sibling ###################################################

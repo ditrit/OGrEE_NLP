@@ -1,8 +1,15 @@
 """This module contains methods to create commands from parameters for racks"""
+import sys
+import os
+current_directory = os.path.dirname(os.path.abspath(__file__))
+sys.path.append(os.path.join(current_directory, '..', 'tools'))
 
 import json
-from solver.Component import Component
-from solver.Device import Device
+
+from Component import Component
+from Device import Device
+from Group import Group
+
 from tools import isConform
 from math import *
 
@@ -22,14 +29,22 @@ class Rack(Component):
     "BOTTOM": [-90,0,0]}
     possible_units = ['t','m','f']
 
-    def __init__(self, name : str, position : list, rack_rotation : str | list, size : list, unit : str = 't', components : list = [], clearance = [0, 0, 0, 0, 0, 0]):
-        self.unit = unit
+    def __init__(self, name : str, position : list, unit, rack_rotation : str | list, size : list, components : list = [], clearance = [0, 0, 0, 0, 0, 0]):
+        super().__init__(name,position,rack_rotation,size)
+        if unit !=None and type(unit) == str:
+            self.unit = unit
+        else:
+            self.unit = "t"
         self.components = components
         self.clearance = clearance
-        super.__init__(name,position,rack_rotation,size)
+        
 
     @classmethod
-    def create_from_template(Rack,name,position,rack_rotation,template,unit = 't',components : list = [],clearance = [0, 0, 0, 0, 0, 0]):
+    def create_from_template(Rack,name,position,unit ,rack_rotation,template,components : list = [],clearance = [0, 0, 0, 0, 0, 0]):
+        if unit !=None and type(unit) == str:
+            unit = unit
+        else:
+            unit = "t"
         size = super().set_param_from_template(template,'size')
         return Rack(name, position,rack_rotation,size,unit,components,clearance)
 
@@ -94,6 +109,9 @@ class Rack(Component):
         
         return boolean
 
+    def __repr__(self):
+        return f"{self.__class__.__name__}(name={self.name},position={self.position},rotation={self.rotation},size={self.size})"
+    
     #This method create a group which contains all the components in comp
     def createGroup(self,name : str, *comp: Component):
         if type(comp[0]) != Device:
