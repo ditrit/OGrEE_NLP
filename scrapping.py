@@ -16,7 +16,7 @@ def scrapAllName(filename : str) -> dict:
             if line[:2] == "//":
                 line = commands.readline()
                 continue
-            allCommand += re.findall("\+[A-Za-z]*:[A-Za-z0-9/]*[@\n]", line)
+            allCommand += re.findall("\+[A-Za-z]*:[\w/]*[@\n]", line)
             line = commands.readline()
 
     # for each command, cut the string and put the name as key and the entity type as value. Ex : "/P/BASIC" : "site"
