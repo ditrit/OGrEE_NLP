@@ -1,7 +1,8 @@
 import re, json, sys
-from Room import Room
-from Rack import Rack
+from items.Room import Room
+from items.Rack import Rack
 from pulp import LpVariable, LpProblem, LpBinary
+
 
 ######################################## Methods to place an object next to a sibling ###################################################
 def get_line_coeff(p1,p2):
