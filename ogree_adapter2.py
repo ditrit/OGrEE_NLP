@@ -1,14 +1,9 @@
 import json
 import re
-import sys
-import os
-current_directory = os.path.dirname(os.path.abspath(__file__))
-sys.path.append(os.path.join(current_directory, '..', 'tools'))
 
-from tools import nbOccurences, terrorist
-from Rack import *
-from Room import *
-from Corridor import *
+from tools import *
+from solver.Rack import *
+from solver.Room import *
 
 def createRoomFromTemplate(name :str, position : list, rotation : int, filename : str) -> str:
     """Creates a Room instance from a json file with a template"""
@@ -42,6 +37,16 @@ def executeCommandOCLI(command : str, parameters : list):
     #return TERRORIST[command](parameters)
     pass
 
+def terrorist(parameters : list):
+    reifiedParameters = []
+    for parameter in parameters:
+        try:
+
+            reifiedParameters.append(json.loads(parameter))
+        except json.decoder.JSONDecodeError:
+            reifiedParameters.append(parameter)
+    return reifiedParameters
+
 
 def createRoom(parameters : list):
     """Creates a room from given parameters"""
@@ -58,11 +63,6 @@ def getTypeFromName(filename : str, name : str):
     in case a name is used for different objects"""
     k, line = readFileOCLI(filename, name)
     typeOfCommand, parameters = readCommandOCLI(line)
-    print("typeOfCommand, param",  typeOfCommand, parameters)
-    #only the separator has to havefor last argument plain or wireframe.
-    if bool(re.compile(r"plain|wireframe").match(parameters[-1])):
-        raise Exception("dsdfgrzgetzheryj")
-        return "Separator"
     return TYPES[typeOfCommand] if typeOfCommand in TYPES.keys() else ""
 
 def getAllNames(file_name : str) -> list:
@@ -73,26 +73,6 @@ def getAllNames(file_name : str) -> list:
         commands = pattern.findall(text)
     names = [re.split('@',re.split(':',c)[1])[0] for c in commands]
     return names
-
-def hasTemplate(obtype : str, command : str) -> bool:
-    """Returns true if the given command uses a template"""
-    tuple_command = readCommandOCLI(command)
-    params = terrorist(tuple_command[1])
-    match obtype:
-        case "Building":
-            if(type(params[3])==str):
-                return True
-            else : return False
-        case "Room" :
-            if(type(params[3])==str):
-                return True
-            else : return False
-        case "Site" :
-            return False
-        case "Rack" :
-            if(type(params[4])==str):
-                return True
-            else : return False
 
 def objects_in(obj : str, file_name : str) -> list:
     """Given an object 'obj', returns every object that are contained in this one"""
@@ -116,10 +96,10 @@ def getParametersFromName(name : str, file_name : str) -> dict:
     object_type = getTypeFromName(file_name,name)
     creation_cmd = copy_cmds[0] #we suppose that the commaand to create an object is always the first command to appear
     commandOcli = readCommandOCLI(creation_cmd)
-    if type(commandOcli) ==tuple:
-        params = terrorist(commandOcli[1])
+    if(len(commandOcli) > 1):
+        params = terrorist(readCommandOCLI(creation_cmd)[1])
     else:
-        Exception("ReadCommandOcli should return a tuple")
+        params = terrorist(readCommandOCLI(creation_cmd))
     match object_type:
         case "Building":
             if(hasTemplate(object_type,creation_cmd)):
@@ -130,19 +110,13 @@ def getParametersFromName(name : str, file_name : str) -> dict:
             if(hasTemplate(object_type,creation_cmd)):
                 params[3] = json.loads(params[3] + ".json")
         case "Site" :
-            return object_type,params
+            return params
         case "Rack" :
             if(hasTemplate(object_type,creation_cmd)):
                 params[4] = json.loads(params[4] + ".json")
-        case "Corridor":
-            return object_type, params
-        case "Pillar":
-            return object_type, params
-        case "Separator":
-            return object_type,params
         case _:
             params = []
-    return object_type ,params
+    return params
 
 def search_modifs(commands : list) -> list:
     """Search the modification made on a object"""
@@ -157,78 +131,45 @@ def getAllElementParameters(room_name : str, path : str) -> list:
     entity_in_room = objects_in('/P/BASIC/A/R1',path)
     list_entity_parameter =[]
     for entity in entity_in_room:
-        command_ocli , list_param = getParametersFromName(entity,path)
-        list_entity_parameter.append((command_ocli,list_param))
+        list_param = getParametersFromName(entity,path)
+        list_entity_parameter.append(list_param)
     return list_entity_parameter
 
 def createListObject(room_name : str, path : str) -> list:
     list_entity = getAllElementParameters(room_name, path)
-    object_type, room = getParametersFromName(room_name, path)
-    #We create the object room
-    #A room have at least 4 parameters
-    if len(room) > 3:
-            if type(room[3]) != str:
-                obj_room = Room(room[0],room[1],room[2],room[3])
-            else:
-                obj_room = Room.create_from_template(room[0],room[1],room[2],room[3])
-    else:
-        raise Exception("A room should have at least 4 parameters")
     list_object = []
-    for entity_command_ocli,entity_list in list_entity:
-        #All the entities are Racks so we should always have 5 parameters
-        print(entity_command_ocli,entity_list)
-        match entity_command_ocli:
-            case "Rack":
-                if len(entity_list) == 5:
-                    if type(entity_list[4]) !=str:
-                        new_object = Rack(entity_list[0],entity_list[1], entity_list[2],entity_list[3],entity_list[4])
-                    else:
-                        new_object = Rack.createFromTemplate(entity_list[0],entity_list[1], entity_list[2],entity_list[3],entity_list[4])
-                    list_object.append(new_object)
-                else:
-                    raise Exception( "A rack should have 5 arguments")
-            case "Corridor":
-                if len(entity_list) == 6:
-                        new_object = Corridor(entity_list[0],entity_list[1], entity_list[2],entity_list[3],entity_list[4],entity_list[5])
-                        list_object.append(new_object)       
-                else:
-                    raise Exception( "A corridor should have 6 arguments")
-            case "Separator":
-                if len(entity_list) == 4 :
-                    obj_room.addSeparator(getNameSeparator(entity_list[0]),entity_list[1], entity_list[2], entity_list[3])
-                else:
-                    raise Exception("A separator should have 4 arguments")
-    print("Separators : " ,obj_room.separators)    
-    return obj_room, list_object
-
-
-def getNameSeparator(name :str) -> str:
-    return texte.split('=')[1]
+    for entity in list_entity:
+        #All the entities are Racks so we should always have 4 parameters
+        if len(entity) == 5:
+            if type(entity[4]) !=str:
+                new_object = Rack(entity[0],entity[1], entity[2],entity[3],entity[4])
+            else:
+                new_object = Rack.createFromTemplate(entity[0],entity[1], entity[2],entity[3],entity[4])
+        list_object.append(new_object)
+    return list_object
 
 
 
-TYPES = {"+ro" : "Room", "+si" : "Site", "+bd" : "Building", "+room" : "Room", "+site" : "Site", "+building" : "Building", "+rk" : "Rack", "+rack" : "Rack",
- "+gr" : "Group", "+corridor" : "Corridor", "+co" : "Corridor", "pillar+" : "Pillar", "separators+" : "Separator" }    
+
+
+
+TYPES = {"+ro" : "Room", "+si" : "Site", "+bd" : "Building", "+room" : "Room", "+site" : "Site", "+building" : "Building", "+rk" : "Rack", "+rack" : "Rack", "+gr" : "Group", "+corridor" : "Corridor", "+co" : "Corridor"}    
     
 # TERRORIST = {"+ro" : createRoomFromCommand, "+si" : createSiteFromCommand, "+bd" : createBuidlingFromCommand}
 
 if __name__ == "__main__":
     testCommand = "+bd:/P/BASIC/A@[0,0]@0@[24,30,1]"
-    testCommand2 = "/P/BASIC/A/R1:separator+=SEPA1@[0,51]@[51,87]@plain"
     #print(readFileOCLI("demo/simu1.ocli", "/P/BASIC/A/R1"))
     # print(getTypeFromName("demo/simu1.ocli","/P/BASIC"))
   #  path = "C:\\Users\\lemoi\\Documents\\Cours\\Commande_Entreprise\\GitHub\\OGrEE_NLP\\DEMO.BASIC.ocli"
     path = r"C:\Users\Admin\Desktop\dossier\DEMO_BASIC.ocli"
-    #print("getName : ",getTypeFromName(path,"SEPA1"))
-  #  commands = getAllNames(path)
+    commands = getAllNames(path)
     # for command in commands:
     #     print("objet : ",command,"\t| parent : ", getParentName(command))
-  #  objects = objects_in('/P/BASIC/A/R1',path)
+    objects = objects_in('/P/BASIC/A/R1',path)
     # for obj in objects:
     #     print(obj)
-   # cmds = getParametersFromName('/P/BASIC/A/R1/B07',path)
+    cmds = getParametersFromName('/P/BASIC/A/R1/B07',path)
     print(getAllElementParameters('/P/BASIC/A/R1',path))
-    #list_object_Ocli = createListObject('/P/BASIC/A/R1',path)
-    #print(list_object_Ocli)
    # for cmd in cmds :
    #     print(cmd)
