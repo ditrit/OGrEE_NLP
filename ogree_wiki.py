@@ -1,6 +1,7 @@
 import re
 
 ENTITIES = {
+            "tenant" : "tn",
             "site" : "si",
             "building" : "bd",
             "room" : "ro",
@@ -15,6 +16,9 @@ ENTITIES = {
             }
 
 PARAMETERS_NAME = {
+                "tenant" : {"mandatory" : ["name","color"],
+                            "optional" : []
+                            },
                 "site" : {  "mandatory" : ["name"], 
                             "optional" : ["orientation"]
                             },
@@ -48,12 +52,39 @@ PARAMETERS_NAME = {
                             "optional"  : ["attribute","font","background","name"]
                 },
                 "separator" : {
-                            "mandatory" : ["name","startPosition","endPosition","wall"],
+                            "mandatory" : ["name","startPosition","endPosition","type"],
                             "optional"  :[]
                 }
                 }
 
+COLORS_HEX_BASIC = {
+    'red': '#FF0000',
+    'green': '#00FF00',
+    'blue': '#0000FF',
+    'white': '#FFFFFF',
+    'black': '#000000',
+    'yellow': '#FFFF00',
+    'purple': '#800080',
+    'orange': '#FFA500',
+    'pink': '#FFC0CB',
+    'brown': '#A52A2A',
+    'cyan': '#00FFFF',
+    'gray': '#808080',
+    'grey': '#808080'
+}
+
 PARAMETERS_FORMAT = {
+                "tenant" : {
+                    "name" : {
+                        "description" : "name of the tenant without blankspaces",
+                        "type" : [str]
+                    },
+                    "color" : {
+                        "description" : "hexadecimal color code for the tenant (e.g #ff0000)",
+                        "type" : [str]
+                    }
+
+                },
                 "site" : {
                             "name" : {
                                         "description" : "name of the site without blankspaces",
@@ -94,8 +125,7 @@ PARAMETERS_FORMAT = {
                                         "position" : {
                                                         "description" : "vector [x,y] or [x,y,z] in m, float",
                                                         "type" : [list],
-                                                      #  "len" : 2, Ici c'est 2 ou 3 et de la manière dont ça a été codé il vaut mieux
-                                                      #rien mettre
+                                                        "len" : [2,3],
                                                         "type_value" : [float, int]
                                                         },
                                         "rotation" : {

@@ -1,8 +1,9 @@
 import spacy
 from spacy.tokens import Doc, Token
-nlp = spacy.load("en_core_web_lg")
+nlp = spacy.load("en_core_web_md")
 from typing import Optional
 import re
+import ogree_wiki as wiki
 
 
 def template(processed_entry : Doc, index : int, attachedEntity : str, lastKeyWordIndex : int, nextKeyWordIndex : int, forbiddenIndexes : list = []) :
@@ -213,18 +214,21 @@ def axisOrientation(processed_entry : Doc, index : int, attachedEntity : str, la
     #An axis Orientation can be any combinason of [+/-]x[+/-]y. eg: +x+y or -x+y
     axisX = re.findall("[-\+]?[ ]?x", "".join([token.lower_ for token in next_words]))
     axisY = re.findall("[-\+]?[ ]?y", "".join([token.lower_ for token in next_words]))
-    for token in next_words :
-        if token.lower_ in "".join(axisX + axisY) :
-            resultIndexes.append(token.i)
+    if len(axisX) in [0,1] and len(axisY) in [0,1] and len(axisX)+len(axisY) != 0 :
+        # get the indexes
+        for token in next_words :
+            if token.lower_ in "".join(axisX + axisY) :
+                resultIndexes.append(token.i)
 
     # if not found in the next words, seek in the previous words
     if len(axisX) not in [0,1] or len(axisY) not in [0,1] or len(axisX)+len(axisY) == 0 :
         resultIndexes = []
         axisX = re.findall("[-\+]?[ ]?x", "".join([token.lower_ for token in previous_words]))
         axisY = re.findall("[-\+]?[ ]?y", "".join([token.lower_ for token in previous_words]))
-        for token in previous_words :
-            if token.lower_ in "".join(axisX + axisY) :
-                resultIndexes.append(token.i)
+        if len(axisX) in [0,1] and len(axisY) in [0,1] and len(axisX)+len(axisY) != 0 :
+            for token in previous_words :
+                if token.lower_ in "".join(axisX + axisY) :
+                    resultIndexes.append(token.i)
 
     if len(axisX) not in [0,1] or len(axisY) not in [0,1] or len(axisX)+len(axisY) == 0 :
         raise Exception("No axisOrientation value detected")
@@ -266,5 +270,86 @@ def unit(processed_entry : Doc, index : int, attachedEntity : str, lastKeyWordIn
         return resultValues[0], resultIndexes
     
 
+def findKeyWord(processed_entry : Doc, 
+                index : int, 
+                attachedEntity : str, 
+                lastKeyWordIndex : int, 
+                nextKeyWordIndex : int, 
+                forbiddenIndexes : list = [],
+                keyWordsList : list = []) :
+    
+    resultValues = []
+    resultIndexes = []
+
+    allWords = [token for token in processed_entry[lastKeyWordIndex+1:nextKeyWordIndex] if token.i not in forbiddenIndexes]
+    for token in allWords :
+        if token.lower_ in keyWordsList :
+            resultValues.append(token.lower_)
+            resultIndexes.append(token.i)
+            break
+
+    if len(resultValues) != 1 :
+        return None,None
+    else :
+        return resultValues[0], resultIndexes
+    
+def color(processed_entry : Doc, index : int, attachedEntity : str, lastKeyWordIndex : int, nextKeyWordIndex : int, forbiddenIndexes : list = []) :
+    # We first seek a keyword, if not found we directly seek a hexa code
+    colorKeyWords = wiki.COLORS_HEX_BASIC.keys()
+    if processed_entry[index].lower_ in colorKeyWords :
+        return wiki.COLORS_HEX_BASIC[processed_entry[index].lower_], [index]
+    else :
+        value, indexes = findKeyWord(processed_entry, index, attachedEntity, lastKeyWordIndex, nextKeyWordIndex, forbiddenIndexes, colorKeyWords)
+        if value != None and indexes != None :
+            return wiki.COLORS_HEX_BASIC[value], [index]
+
+    next_words = [token for token in processed_entry[index+1:nextKeyWordIndex] if token.i not in forbiddenIndexes]
+    previous_words = [token for token in processed_entry[lastKeyWordIndex+1:index] if token.i not in forbiddenIndexes]
+
+    resultIndexes = []
+    resultValues = re.findall("#[ ]*[a-zA-Z0-9]{6}", "".join([token.text for token in next_words]))
+    if len(resultValues) == 1 :
+        for token in next_words :
+            if token.text in resultValues[0] :
+                resultIndexes.append(token.i)
+
+    if len(resultValues) != 1 : # if none found, seek in the previous words
+        resultValues = re.findall("#[ ]*[a-zA-Z0-9]{6}", "".join([token.text for token in previous_words]))
+        if len(resultValues) == 1 :
+            for token in previous_words :
+                if token.text in resultValues[0] :
+                    resultIndexes.append(token.i)
+
+    if len(resultValues) != 1 : 
+        raise Exception("Not color value detected")
+    else : 
+        return resultValues[0].replace(" ", ""), resultIndexes
+    
+
 def slot(processed_entry : Doc, index : int, attachedEntity : str, lastKeyWordIndex : int, nextKeyWordIndex : int, forbiddenIndexes : list = []) :
     return template(processed_entry, index, attachedEntity, lastKeyWordIndex, nextKeyWordIndex, forbiddenIndexes)
+
+
+def side(processed_entry : Doc, index : int, attachedEntity : str, lastKeyWordIndex : int, nextKeyWordIndex : int, forbiddenIndexes : list = []) :
+    sideKeyWords = ["front", "rear", "frontflipped", "rearflipped"]
+    return findKeyWord(processed_entry, index, attachedEntity, lastKeyWordIndex, nextKeyWordIndex, forbiddenIndexes, sideKeyWords)
+
+
+def temperature(processed_entry : Doc, index : int, attachedEntity : str, lastKeyWordIndex : int, nextKeyWordIndex : int, forbiddenIndexes : list = []) :
+    temperatureKeyWords = ["cold","warm"]
+    if processed_entry[index].lower_ in temperatureKeyWords :
+        return processed_entry[index].lower_, [index]
+    else :
+        return findKeyWord(processed_entry, index, attachedEntity, lastKeyWordIndex, nextKeyWordIndex, forbiddenIndexes, temperatureKeyWords)
+
+    
+def type(processed_entry : Doc, index : int, attachedEntity : str, lastKeyWordIndex : int, nextKeyWordIndex : int, forbiddenIndexes : list = []) :
+    typeKeyWords = ["wireframe","plain"]
+    if processed_entry[index].lower_ in typeKeyWords :
+        return processed_entry[index].lower_, [index]
+    else :
+        return findKeyWord(processed_entry, index, attachedEntity, lastKeyWordIndex, nextKeyWordIndex, forbiddenIndexes, typeKeyWords)
+
+
+
+
