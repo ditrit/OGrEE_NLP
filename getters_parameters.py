@@ -97,7 +97,7 @@ def template(processed_entry : Doc, index : int, attachedEntity : str, lastKeyWo
     else :
         return resultValues, resultIndexes
 
-
+# TODO : manage width etc
 def position(processed_entry : Doc, index : int, attachedEntity : str, lastKeyWordIndex : int, nextKeyWordIndex : int, forbiddenIndexes : list = []) :
     next_words = [token for token in processed_entry[index+1:nextKeyWordIndex] if token.i not in forbiddenIndexes]
     previous_words = [token for token in processed_entry[lastKeyWordIndex+1:index] if token.i not in forbiddenIndexes]
