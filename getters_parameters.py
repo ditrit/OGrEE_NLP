@@ -1,10 +1,11 @@
 import spacy
 from spacy.tokens import Doc, Token
-nlp = spacy.load("en_core_web_md")
+nlp = spacy.load("en_core_web_lg")
 from typing import Optional
 import re
 import ogree_wiki as wiki
 
+avenger = globals()
 
 def template(processed_entry : Doc, index : int, attachedEntity : str, lastKeyWordIndex : int, nextKeyWordIndex : int, forbiddenIndexes : list = []) :
     next_words = [token for token in processed_entry[index+1:nextKeyWordIndex] if token.i not in forbiddenIndexes]
