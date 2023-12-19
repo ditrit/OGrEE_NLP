@@ -40,7 +40,7 @@ PARAMETERS_NAME = {
                             "optional" : []
                             },
                 "tag" :     {
-                            "mandatory" : ["name","color"],
+                            "mandatory" : ["template","color"],
                             "optional" : []
                             },
                 "pillar" :  {
@@ -243,8 +243,8 @@ PARAMETERS_FORMAT = {
                                 },
                         },
                 "tag" : {
-                        "name" : {
-                                "description" : "name of the tag. Replace slug",
+                        "template" : {
+                                "description" : "template of the tag. Replace slug",
                                 "type" : [str]
                         },
                         "color" : {
