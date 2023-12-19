@@ -17,13 +17,13 @@ def select_file():
 def close_window():
     root.destroy()
 
-def findDirectoryPath(path :str) -> str:
+def findDirectoryPath() -> str:
     new_path=""
     for i in range(len(re.split('/', FILEPATH))-1):
         new_path+=re.split('/', FILEPATH)[i] + "/"
     return new_path[:-1]
 
-button = tk.Button(root, text="Open the file ocli to work on", command=select_file)
+button = tk.Button(root, text="Open the OCLI file to work on", command=select_file)
 close_button = tk.Button(root, text="Exit", command=close_window)
 button.pack()  
 close_button.pack()

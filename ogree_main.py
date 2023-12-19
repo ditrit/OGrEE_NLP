@@ -14,6 +14,7 @@ importlib.reload(wiki)
 import items.tools as tools
 import scrapping
 import getters_parameters as get
+import initialization as init
 
 ACTIONS_DEFAULT = {
                     "ACTION_POSITIVE" : ["make","build","put","place","add","insert"],
@@ -755,17 +756,9 @@ def NL_to_OCLI() -> str :
 
 if __name__ == "__main__":
     
-    files = [f for f in os.listdir("OCLI_files") if len(f) >= 5 and f[-5:] == ".ocli"]
-    if len(files) > 1:
-        choosenIndex = None
-        while (not type(choosenIndex) == int) :
-            print("The following OCLI files are available :")
-            for index, file in enumerate(files):
-                print(f"    {index+1} : {file}")
-            choosenIndex = input(" Which one do you want to use ? ")
-        fileString = files[choosenIndex - 1]
-    elif len(files) == 0:
-        fileString = "new_file.ocli"
+    init.select_file()
+    file = init.findDirectoryPath()
+    init.copieFile()
 
     # WORK IN PROGRESS, DO NOT TOUCH
 
