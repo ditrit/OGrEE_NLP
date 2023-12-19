@@ -6,6 +6,8 @@ import re
 import ogree_wiki as wiki
 
 
+FUNCTIONS = globals()
+
 def template(processed_entry : Doc, index : int, attachedEntity : str, lastKeyWordIndex : int, nextKeyWordIndex : int, forbiddenIndexes : list = []) :
     next_words = [token for token in processed_entry[index+1:nextKeyWordIndex] if token.i not in forbiddenIndexes]
     previous_words = [token for token in processed_entry[lastKeyWordIndex+1:index] if token.i not in forbiddenIndexes]
@@ -61,13 +63,13 @@ def template(processed_entry : Doc, index : int, attachedEntity : str, lastKeyWo
                 if (not validIndex) or currentIndex+1 in forbiddenIndexes or currentIndex-1 in forbiddenIndexes :
                     continue
                 if not currentIndex-1 in indexes :
-                    name += processed_entry[currentIndex-1].lower_
+                    name += processed_entry[currentIndex-1].text
                     indexes.append(currentIndex-1)
-                name += processed_entry[currentIndex].lower_ + processed_entry[currentIndex+1].lower_
+                name += processed_entry[currentIndex].text + processed_entry[currentIndex+1].text
                 indexes.extend([currentIndex, currentIndex+1])
                 indexJump = 2
             elif validIndex and (isTemplate(processed_entry[currentIndex]) or processed_entry[currentIndex].pos_ == "NUM") :
-                name += "-" + processed_entry[currentIndex].lower_
+                name += "-" + processed_entry[currentIndex].text
                 indexes.append(currentIndex)
             else :
                 isNameFinished = True
