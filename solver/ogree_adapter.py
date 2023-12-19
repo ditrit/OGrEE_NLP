@@ -5,7 +5,7 @@ import os
 current_directory = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(os.path.join(current_directory, '..', 'tools'))
 
-from tools import nbOccurences, terrorist
+from tools import nbOccurences, terrorist, transformStringParameters
 from Rack import *
 from Room import *
 from Corridor import *
@@ -58,11 +58,6 @@ def getTypeFromName(filename : str, name : str):
     in case a name is used for different objects"""
     k, line = readFileOCLI(filename, name)
     typeOfCommand, parameters = readCommandOCLI(line)
-    print("typeOfCommand, param",  typeOfCommand, parameters)
-    #only the separator has to havefor last argument plain or wireframe.
-    if bool(re.compile(r"plain|wireframe").match(parameters[-1])):
-        raise Exception("dsdfgrzgetzheryj")
-        return "Separator"
     return TYPES[typeOfCommand] if typeOfCommand in TYPES.keys() else ""
 
 def getAllNames(file_name : str) -> list:
@@ -163,52 +158,207 @@ def getAllElementParameters(room_name : str, path : str) -> list:
 
 def createListObject(room_name : str, path : str) -> list:
     list_entity = getAllElementParameters(room_name, path)
+    #We get the room
     object_type, room = getParametersFromName(room_name, path)
+    list_entity_changed = (listeItemInRoomToChange(room_name,path,objects_in(room_name,path)))
+    liste_entity_correct = correctEntityParameters(room_name,path,list_entity_changed)
     #We create the object room
     #A room have at least 4 parameters
     if len(room) > 3:
+            list_changes_room = {}
+            #We seek all the changes made for the room
+            for elem, parameter in liste_entity_correct:
+                if elem == room[0]:
+                    list_changes_room[parameter[0]] = parameter[1]
+            position = list_changes_room['pos'] if 'pos' in list_changes_room.keys() else room[1]
+            rotation = list_changes_room['rotation'] if 'rotation' in list_changes_room.keys() else room[2]
+            size = list_changes_room['size'] if 'size' in list_changes_room.keys() else room[3]
+            technical = list_changes_room['technical'] if 'technical' in list_changes_room.keys() else [0,0,0,0]
+            reserved = list_changes_room['reserved'] if 'reserved' in list_changes_room.keys() else [0,0,0,0]
             if type(room[3]) != str:
-                obj_room = Room(room[0],room[1],room[2],room[3])
+                obj_room = Room(room[0],position,rotation,size,reserved,technical)
             else:
-                obj_room = Room.create_from_template(room[0],room[1],room[2],room[3])
+                template = list_changes_room['template'] if 'template' in list_changes_room.keys() else room[3]
+                obj_room = Room.create_from_template(room[0],position,rotation,template,reserved,technical)
     else:
         raise Exception("A room should have at least 4 parameters")
     list_object = []
     for entity_command_ocli,entity_list in list_entity:
         #All the entities are Racks so we should always have 5 parameters
-        print(entity_command_ocli,entity_list)
+        list_changes_room = {}
+        #We seek all the changes made for the room
+        for elem, parameter in liste_entity_correct:
+                if len(entity_list) > 0 and elem == entity_list[0]:
+                    list_changes_room[parameter[0]] = parameter[1]
         match entity_command_ocli:
             case "Rack":
                 if len(entity_list) == 5:
+                    position = list_changes_room['pos'] if 'pos' in list_changes_room.keys() else entity_list[1]
+                    unit = list_changes_room['unit'] if 'unit' in list_changes_room.keys() else entity_list[1]
+                    rotation = list_changes_room['rotation'] if 'rotation' in list_changes_room.keys() else entity_list[3]
+                    size = list_changes_room['size'] if 'size' in list_changes_room.keys() else entity_list[4]
                     if type(entity_list[4]) !=str:
-                        new_object = Rack(entity_list[0],entity_list[1], entity_list[2],entity_list[3],entity_list[4])
+                        new_object = Rack(entity_list[0],position, unit,rotation,size)
                     else:
-                        new_object = Rack.createFromTemplate(entity_list[0],entity_list[1], entity_list[2],entity_list[3],entity_list[4])
+                        template = list_changes_room['template'] if 'template' in list_changes_room.keys() else entity_list[4]
+                        new_object = Rack.createFromTemplate(entity_list[0],position, unit,rotation,template)
                     list_object.append(new_object)
                 else:
                     raise Exception( "A rack should have 5 arguments")
             case "Corridor":
                 if len(entity_list) == 6:
-                        new_object = Corridor(entity_list[0],entity_list[1], entity_list[2],entity_list[3],entity_list[4],entity_list[5])
-                        list_object.append(new_object)       
+                    position = list_changes_room['pos'] if 'pos' in list_changes_room.keys() else entity_list[1]
+                    unit = list_changes_room['unit'] if 'unit' in list_changes_room.keys() else entity_list[1]
+                    rotation = list_changes_room['rotation'] if 'rotation' in list_changes_room.keys() else entity_list[3]
+                    size = list_changes_room['size'] if 'size' in list_changes_room.keys() else entity_list[4]
+                    new_object = Corridor(entity_list[0],position,unit,rotation,size,entity_list[5])
+                    list_object.append(new_object)       
                 else:
                     raise Exception( "A corridor should have 6 arguments")
-            case "Separator":
-                if len(entity_list) == 4 :
-                    obj_room.addSeparator(getNameSeparator(entity_list[0]),entity_list[1], entity_list[2], entity_list[3])
+    #Commands to create a separator and a pillar are a bit special so we have to treat them separetly
+    list_pillars_sepa = getAllParametersSeparatorsPillarsInRoom(room_name, path)
+    list_separator_pillar_changed = listSeparatorPillarChanged(room_name,path,getAllParametersSeparatorsPillarsInRoom(room_name,path))
+    list_separator_pillar_correct = correctEntityParameters(room_name,path,list_separator_pillar_changed) 
+    for command in list_pillars_sepa:
+        entity_type = TYPES[command[0]] if command[0] in TYPES.keys() else ""
+        parameters = terrorist(command[1])
+        dict_changes = {}
+        for elem, param in list_separator_pillar_correct:
+            if elem == parameters[0]:
+                dict_changes[param[0]] = param[1]
+        match entity_type:
+            case "Pillar":
+                if len(parameters) ==4:
+                    center = dict_changes['centerXY'] if 'centerXY' in dict_changes.keys() else parameters[1]
+                    size = dict_changes['sizeXY'] if 'sizeXY' in dict_changes.keys() else parameters[2]
+                    rotation = dict_changes['rotation'] if 'rotation' in dict_changes.keys() else parameters[3]
+                    obj_room.addPillar(parameters[0],center,size,rotation)
                 else:
-                    raise Exception("A separator should have 4 arguments")
-    print("Separators : " ,obj_room.separators)    
+                    raise Exception("A pillar should have 4 parameters")
+            case "Separator":
+                if len(parameters) ==4:
+                    startPos = dict_changes['startPos'] if 'startPos' in dict_changes.keys() else parameters[1]
+                    endPos = dict_changes['endPos'] if 'endPos' in dict_changes.keys() else parameters[2]
+                    obj_room.addSeparator(parameters[0],startPos,endPos,parameters[3])
+                else:
+                    raise Exception("A separator should have 4 parameters")
     return obj_room, list_object
 
 
-def getNameSeparator(name :str) -> str:
-    return texte.split('=')[1]
+def getAllSeparatorsPillars(path : str) -> list:
+    """Returns all the pillars and Separators present in the ocli files"""
+    with open(path, "r") as file:
+        text = file.read()
+        pattern = re.compile(r'.*separators[+]=.*|.*pillars[+]=.*', re.MULTILINE)
+        commands = pattern.findall(text)
+    #names = [re.split('@',re.split(':',c)[1])[0] for c in commands]
+    return commands
 
+def getAllSeparatorsPillarsInRoom(room : str, path : str) -> list:
+    """Return all the pillars and separators in the room room"""
+    commands = getAllSeparatorsPillars(path)
+    in_room = []
+    for command in commands:
+        name_room = re.split(':',command)[0]
+        if re.search(name_room,room):
+                in_room.append(command)
+    return in_room
 
+def getAllParametersSeparatorsPillarsInRoom(room : str, path : str) -> list:
+    """Return all the parameters of the pillars and separators in the room room"""
+    commands = getAllSeparatorsPillarsInRoom(room, path)
+    in_room = []
+    for command in commands:
+        type_command, params = re.split('=',command)[0], re.split('=',command)[1]
+        list_param = []
+        for parameter in re.split('@',params):
+            list_param.append(parameter)
+        in_room.append((re.split(':',type_command)[1],list_param))
+    return in_room
 
+def findChangesObjects(path : str) -> list:
+
+    list_selection = []
+    find_selection_changed = False
+    currentSelection = None
+    with open(path,'r') as file:
+        for line in file:
+            current_line = line.strip()
+            #We check if a reserved area and a technical area are added
+            reserved_tech = re.findall(r'^[^@+:{}-]+:areas=\[[0-9,]{7}\]@\[[0-9,]{7}\]',current_line)
+            if reserved_tech !=[]:
+                list_selection.append((re.split(':',current_line)[0],['reserved',re.split(r'=',re.split(r'@',current_line)[0])[1]]))
+                list_selection.append((re.split(':',current_line)[0],['technical',re.split(r'@',current_line)[1]]))
+            if currentSelection != None:
+                #We huess that all variable put in a file .ocli are conform
+                #A modification is done only if something was selected and the modification if always related the the selection just before
+                pattern_change =  re.findall(r'^[^@+:{}-]+:(pos|size|startPos|endPos|centerXY|sizeXY|rotation|axisOrientation|template|unit|floorUnit)[\s]*', current_line)
+                if pattern_change !=[]:
+                    #I found a change
+                    list_selection.append((currentSelection,re.split('=',re.split(':',current_line)[1])))
+
+            #I only want to find selection which were changed
+            pattern = re.findall(r'^=\{[^}=:-@+]+\}$|^=[^@+:{}-]+$', current_line)
+            if pattern !=[]:
+                currentSelection = pattern
+    return list_selection
+
+def listItemsToChange(path : str):
+    """This functions will break the selection of several entities in unitary entitities"""
+    list_changes = findChangesObjects(path)
+    #This list will contain all the items which will be changed and the changes
+    list_changes_final = []
+    for elem, paramaters in list_changes:
+        if re.findall(r'=\{', elem[0]) !=[]:
+            #We get all the entities of the selection 
+            list_entity_changed = re.split(r',',re.split(r'\{', re.split(r'\}',elem[0])[0])[1])
+            for entities in list_entity_changed:
+                list_changes_final.append((entities,paramaters))
+        if re.findall(r'=', elem[0]) !=[]:
+            #We only get the name of the entity, not the parent
+            list_changes_final.append((re.split(r'=',elem[0])[1],paramaters))
+        else:
+            #Same here
+            list_changes_final.append((elem,paramaters))
+    return list_changes_final
+
+def listeItemInRoomToChange(room : str, path : str, liste_elem_in_room : list) -> list:
+    """This function will check if the element are in the room room"""
+    list_potential_entity = listItemsToChange(path)
+    list_entity = []
+    for elem, parameter in list_potential_entity:
+        #We check if elem is in the room
+        if elem in  liste_elem_in_room:
+            list_entity.append((elem,[parameter[0],parameter[1]]))
+        #We check if the room is a parent of elem
+        potential_name = room + "/" + elem
+        if potential_name in liste_elem_in_room:
+            #room is a parent of elem
+            list_entity.append((potential_name,[parameter[0],parameter[1]]))
+        #We check if the room have been modified
+        if elem == room:
+            list_entity.append((elem,[parameter[0],parameter[1]]))
+    return list_entity
+
+def listSeparatorPillarChanged(room : str, path : str, liste_elem_in_room : list) -> list:
+    """This function will check if the element are in the room room"""
+    list_potential_entity = listItemsToChange(path)
+    list_entity = []
+    for elem, parameter in list_potential_entity:
+        #We check if elem is in the room
+        if elem in liste_elem_in_room[0][1] or elem in liste_elem_in_room[1][1]:
+            #A separator or a pillar is in the room
+            list_entity.append((elem, parameter))
+    return list_entity
+
+def correctEntityParameters(room:str,path:str, liste_elem_in_room : list) -> list:
+    """This function change the type of the parameters if it is possible"""
+    list_final = []
+    for elem, param in liste_elem_in_room:
+        list_final.append((elem,[param[0],transformStringParameters(param[1])]))
+    return list_final
 TYPES = {"+ro" : "Room", "+si" : "Site", "+bd" : "Building", "+room" : "Room", "+site" : "Site", "+building" : "Building", "+rk" : "Rack", "+rack" : "Rack",
- "+gr" : "Group", "+corridor" : "Corridor", "+co" : "Corridor", "pillar+" : "Pillar", "separators+" : "Separator" }    
+ "+gr" : "Group", "+corridor" : "Corridor", "+co" : "Corridor", "pillars+" : "Pillar", "separators+" : "Separator" }    
     
 # TERRORIST = {"+ro" : createRoomFromCommand, "+si" : createSiteFromCommand, "+bd" : createBuidlingFromCommand}
 
@@ -220,15 +370,28 @@ if __name__ == "__main__":
   #  path = "C:\\Users\\lemoi\\Documents\\Cours\\Commande_Entreprise\\GitHub\\OGrEE_NLP\\DEMO.BASIC.ocli"
     path = r"C:\Users\Admin\Desktop\dossier\DEMO_BASIC.ocli"
     #print("getName : ",getTypeFromName(path,"SEPA1"))
-  #  commands = getAllNames(path)
+    # print(getAllParametersSeparatorsPillarsInRoom("/P/BASIC/A/R1",path))
+    #print(getAllSeparatorsPillars(path))
+    #commands = getAllNames(path)
+    #print(commands)
     # for command in commands:
     #     print("objet : ",command,"\t| parent : ", getParentName(command))
-  #  objects = objects_in('/P/BASIC/A/R1',path)
-    # for obj in objects:
-    #     print(obj)
+    #objects = objects_in('/P/BASIC/A/R1',path)
+    #print(objects)
+    #for obj in objects:
+     #    print(obj)
    # cmds = getParametersFromName('/P/BASIC/A/R1/B07',path)
-    print(getAllElementParameters('/P/BASIC/A/R1',path))
-    #list_object_Ocli = createListObject('/P/BASIC/A/R1',path)
-    #print(list_object_Ocli)
+   # print(getAllElementParameters('/P/BASIC/A/R1',path))
+    room, list_object_Ocli = createListObject('/P/BASIC/A/R1',path)
+    print(list_object_Ocli)
+    print(room)
+    print("Separators : ", room.separators)
+    print("Pillar : ", room.pillars) 
    # for cmd in cmds :
    #     print(cmd)
+    # print(findChangesObjects(path))
+    #print(listItemsToChange(path))
+    # # # print(listeItemInRoomToChange('/P/BASIC/A/R1',path,objects_in('/P/BASIC/A/R1',path)))
+    # print(listSeparatorPillarChanged('/P/BASIC/A/R1',path,getAllParametersSeparatorsPillarsInRoom("/P/BASIC/A/R1",path) ))
+    # print(correctEntityParameters('/P/BASIC/A/R1',path, listSeparatorPillarChanged('/P/BASIC/A/R1',path,getAllParametersSeparatorsPillarsInRoom("/P/BASIC/A/R1",path) )))
+    # # print(correctEntityParameters('/P/BASIC/A/R1',path,listeItemInRoomToChange('/P/BASIC/A/R1',path,objects_in('/P/BASIC/A/R1',path))))
