@@ -127,6 +127,15 @@ def nbOccurences(item : str, text : str) -> int:
     """Count how many times item appears in text"""
     return len(re.findall(item,text))
 
+def transformStringParameters(param:str) -> list:
+    """This function transform param in a list or a number if it is possible"""
+    numbers = re.findall(r'-?\d+(?:\.\d+)?', param) 
+    if len(numbers) == 1:
+        return int(numbers[0])
+    if len(numbers)>1:
+        return [int(c) for c in numbers]
+    return param
+
 def getParametersFromTemplate(name : str) -> dict:
     """Get the parameters from a template file"""
     with open(name + ".json",'r') as template:
