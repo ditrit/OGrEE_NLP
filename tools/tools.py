@@ -1,7 +1,8 @@
 """This module contains static tools for the different classes"""
-
 import re
 import json
+from textblob import TextBlob, Word
+
 
 def create(typeOfObject : str, parameters : dict) -> str:
     """Creates an object from given parameters"""
@@ -129,7 +130,9 @@ def nbOccurences(item : str, text : str) -> int:
 
 def transformStringParameters(param:str) -> list:
     """This function transform param in a list or a number if it is possible"""
-    numbers = re.findall(r'-?\d+(?:\.\d+)?', param) 
+    numbers = re.findall(r'-?\d+(?:\.\d+)?', param)
+    if re.findall(r'[A-Za-z]+',param):
+        numbers = []
     if len(numbers) == 1:
         return int(numbers[0])
     if len(numbers)>1:
@@ -151,6 +154,23 @@ def getParentName(completeName : str) -> str:
     """Returns the name of the parent object. It reverses the name, then splits it using dot as separator, and only
     gets the first part of the name, which is put back in order."""
     return "".join(reversed(completeName)).split("/",1)[-1][::-1]
+
+def correctorSpellingMistakes(text : str) -> str:
+    sentence = re.findall(r'[^ ]+',text)
+    sentence = [transformStringParameters(word) for word in sentence]
+    corrected_word = []
+    for word in sentence:
+        #The word in cap are name
+        if type(word) == str and re.findall(r'[A-Za-z0-1][a-z]+$',word) !=[]:
+            corrected_word.append(str(TextBlob(word).correct()))
+        else:
+            corrected_word.append(word)
+    
+    string = ""
+    for word in corrected_word:
+        string+= str(word) + " "
+    return string
+
 #endregion
 
 
@@ -159,7 +179,10 @@ CONFORMITY_CHECK = {"name" : isNameConform, "orientation" : isOrientationConform
                     "floorUnit" : isFloorUnitConform, "color" : isColorConform}
 
 if __name__ == "__main__":
-    print(create("site",{"name" : "P/BASIC", "orientation":"WSW"}))
-    print(setAttribute("P/BASIC","position","WSW"))
+#     print(create("site",{"name" : "P/BASIC", "orientation":"WSW"}))
+#     print(setAttribute("P/BASIC","position","WSW"))
+
+    print(correctorSpellingMistakes("I em curently tetsing Textblog [5412,1254,4521] 9 FUCKER"))
+    print(correctorSpellingMistakes("Plase at the psitio [0,10,20] the rack caleleed R1"))
 
 
