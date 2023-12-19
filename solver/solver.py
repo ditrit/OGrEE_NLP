@@ -1,11 +1,7 @@
 import re, json, sys
-
-from Room import Room
-from Rack import Rack
-
+from items.Room import Room
+from items.Rack import Rack
 from pulp import LpVariable, LpProblem, LpBinary
-
-
 
 ######################################## Methods to place an object next to a sibling ###################################################
 def get_line_coeff(p1,p2):
@@ -47,45 +43,37 @@ class Problem():
         self.problem += (self.vertices[1][1] == self.y + cos(alpha)*(l + cFr) + sin(alpha)*(L + cRi))
         self.problem += (self.vertices[3][0] == self.x - cos(alpha)*cLe - sin(alpha)*(l + cFr))
         self.problem += (self.vertices[3][1] == self.y + cos(alpha)*(l + cFr) - sin(alpha)*cLe)
-        self.problem += (self.vertices[0][0] == self.x - cos(alpha)*cLe + sin(alpha)*cRe)            
+        self.problem += (self.vertices[0][0] == self.x - cos(alpha)*cLe + sin(alpha)*cRe)
         self.problem += (self.vertices[0][1] == self.y - cos(alpha)*cRe - sin(alpha)*cLe)
     
-    def is_x_between(self,x1,x2):
-        """creates a variable equal to 1 if x is between x1 and x2 """
-        c = LpVariable("between" + str(x1) + "," + str(x2), cat=LpBinary) #equals 1 if self.x is between x1 and x2 0 else
-        # c = 1 if x<=x2 else 0 ############################
-        self.problem += (self.x - x2 <= (1-c)*self.upperBound)
-        self.problem += (x2 - self.x <= c*self.upperBound)
-        ####################################################
-        # c = 1 if x>=x1 else 0 ############################
-        self.problem += (self.x - x1 <= c*self.upperBound)
-        self.problem += (self.x1 - x <= (1-c)*self.upperBound)
+    def is_param_between(self,x1,x2,letter : 'x'|'y', number : 1|2|3|4 ):
+        """creates a variable equal to 1 if the given parameter is between x1 and x2 """
+        c = LpVariable(letter + str(number)+"between" + str(x1) + "," + str(x2), cat=LpBinary) #equals 1 if self.x is between x1 and x2 0 else
+        index = 0 if letter == 'x' else 1
+
+        # c = 1 if parameter<=x2 else 0 ############################
+        self.problem += (self.vertices[number-1][index] - x2 <= (1-c)*self.upperBound)
+        self.problem += (x2 - self.vertices[number-1][index] <= c*self.upperBound)
         ####################################################
 
-    def is_y_between(self,y1,y2):
-        """creates a variable equal to 1 if y is between y1 and y2 """
-        self.index += 1
-        c = LpVariable("between" + str(y1) + "," + str(y2), cat=LpBinary) #equals 1 if self.x is between x1 and x2 0 else
-        # c = 1 if y<=y2 else 0 ############################
-        self.problem += (self.y - y2 <= (1-c)*self.upperBound)
-        self.problem += (y2 - self.y <= c*self.upperBound)
+        # c = 1 if parameter>=x1 else 0 ############################
+        self.problem += (self.vertices[number-1][index] - x1 <= c*self.upperBound)
+        self.problem += (x1 - self.vertices[number-1][index] <= (1-c)*self.upperBound)
         ####################################################
+        return c
 
-        # c = 1 if y>=y1 else 0 ############################
-        self.problem += (self.y - y1 <= c*self.upperBound)
-        self.problem += (self.y1 - y <= (1-c)*self.upperBound)
-        ####################################################
-
-    def ifThen_y_and_x(self, x1, x2, y1, y2):
-        """If x is between x1 and x2 and y is between y1 and y2 then, the position is such that y = ax+b 
+    def ifThen_y_and_x(self,number : 1|2|3|4, x1, x2, y1, y2):
+        """If x_number is between x1 and x2 and y_number is between y1 and y2 then, the position is such that y = ax+b 
         (with a and b in terms of x1, x2, y1, y2)"""
         a,b = get_line_coeff((x1,y1),(x2,y2))
-        cx = self.problem.variablesDict()["between" + str(x1) + "," + str(x2)]
-        cy = self.problem.variablesDict()["between" + str(y1) + "," + str(y2)]
-        d = LpVariable("andBetween" + str(x1) + "," + str(x2) + "," + str(y1) + "," + str(y2), cat=LpBinary) #equals 1 if cx and cy are equal to 1
+        cx = self.is_param_between(x1,x2,'x',number)
+        cy = self.is_param_between(y1,y2,'y',number)
+        d = LpVariable('x' + str(number)+',y' + str(number)+"andBetween" + str(x1) + "," + str(x2) + "," + str(y1) + "," + str(y2), cat=LpBinary) #equals 1 if cx and cy are equal to 1
+        ### d = cx and cy ###
         self.problem += (d >= cx + cy - 1)
-        self.problem += (-self.upperBound*(1-d)<=a*self.x+b-self.y)
-        self.problem += (a*self.x+b-self.y<=self.upperBound*(1-d))
+        ##################### d = 1 (i.e cx and cy =1) implies y = ax+b
+        self.problem += (-self.upperBound*(1-d)<=a*self.vertices[number-1][0]+b-self.vertices[number-1][1])
+        self.problem += (a*self.vertices[number-1][0]+b-self.vertices[number-1][1]<=self.upperBound*(1-d))
     
     def aim_point(p):
         """Defines the point we want to be the closest to"""
@@ -105,14 +93,27 @@ class Problem():
 def set_positionning_problem(rack1,rack2,room,point):
     """set up the problem with all variables and constraints having rack1 and rack2 in room 
     where rack1 is already set in the room and we try to stick rack2 to it"""
+    ## TO DO : change the function
     problem = Problem(rack1,room)
-    rack1_vertices = rack1.get_vertices()
-    n = len(rack1_vertices)
-    for i in range(n):
-        problem.is_x_between(rack1_vertices[i%n][0],rack1_vertices[(i+1)%n][0])
-        problem.is_y_between(rack1_vertices[i%n][1],rack1_vertices[(i+1)%n][1])
-        problem.ifThen_y_and_x(rack1_vertices[i%n][0],rack1_vertices[(i+1)%n][0],rack1_vertices[i%n][1],rack1_vertices[(i+1)%n][1])
-    problem.aim_point(point)
+    vertices = rack2.get_vertices()
+    x,y = [],[]
+    for i in range(len(vertices)):
+        x.append(vertices[i][0])
+        y.append(vertices[i][1])
+    # stick x1
+    problem.ifThen_y_and_x(1,min(x[2],x[0]),max(x[2],x[0]),min(y[2],y[0]),max(y[2],y[0]))
+    problem.ifThen_y_and_x(1,min(x[1],x[0]),max(x[1],x[0]),min(y[1],y[0]),max(y[1],y[0]))
+    # stick x2
+    problem.ifThen_y_and_x(2,min(x[2],x[0]),max(x[2],x[0]),min(y[2],y[0]),max(y[2],y[0]))
+    problem.ifThen_y_and_x(2,min(x[2],x[3]),max(x[2],x[3]),min(y[2],y[3]),max(y[2],y[3]))
+    # stick x3
+    problem.ifThen_y_and_x(3,min(x[1],x[0]),max(x[1],x[0]),min(y[1],y[0]),max(y[1],y[0]))
+    problem.ifThen_y_and_x(3,min(x[0],x[2]),max(x[0],x[2]),min(y[0],y[2]),max(y[0],y[2]))
+    # stick x4
+    problem.ifThen_y_and_x(4,min(x[1],x[3]),max(x[1],x[3]),min(y[1],y[3]),max(y[1],y[3]))
+    problem.ifThen_y_and_x(4,min(x[1],x[0]),max(x[1],x[0]),min(y[1],y[0]),max(y[1],y[0]))
+    #set the objective
+    problem.aim_point(p)
     return problem.showSolution()
 
 
