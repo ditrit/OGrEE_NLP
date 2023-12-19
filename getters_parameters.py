@@ -1,10 +1,9 @@
 import spacy
 from spacy.tokens import Doc, Token
-nlp = spacy.load("en_core_web_md")
+nlp = spacy.load("en_core_web_lg")
 from typing import Optional
 import re
 import ogree_wiki as wiki
-
 
 FUNCTIONS = globals()
 
