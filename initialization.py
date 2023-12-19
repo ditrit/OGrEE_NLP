@@ -1,20 +1,19 @@
 import tkinter as tk
 from tkinter import filedialog
 import re
+from functools import partial
 
-FILEPATH =""
+FILEPATH = ""
+COPIED_FILEPATH = ""
 
-root = tk.Tk() 
-root.update()
-
-def select_file():
+def select_file(root):
     global FILEPATH
     file_path = filedialog.askopenfilename()
     if file_path: 
         FILEPATH = file_path
         root.destroy() 
     
-def close_window():
+def close_window(root):
     root.destroy()
 
 def findDirectoryPath() -> str:
@@ -22,12 +21,6 @@ def findDirectoryPath() -> str:
     for i in range(len(re.split('/', FILEPATH))-1):
         new_path+=re.split('/', FILEPATH)[i] + "/"
     return new_path[:-1]
-
-button = tk.Button(root, text="Open the OCLI file to work on", command=select_file)
-close_button = tk.Button(root, text="Exit", command=close_window)
-button.pack()  
-close_button.pack()
-root.mainloop() 
 
 def copieFile(file_path : str):
     source_file = file_path
@@ -38,10 +31,22 @@ def copieFile(file_path : str):
     return destination_file
 
 #Now, we will create a copy of this file 
-destination_file = copieFile(FILEPATH)
 
-def addCommandInOcli(path : str, cmd : str) :
-    with open(path, 'a') as file:
+def addCommandInOcli(cmd : str) :
+    with open(COPIED_FILEPATH, 'a') as file:
         file.write('\n' + cmd + '\n')
 
-addCommandInOcli(destination_file, "+bd:BATIMENT@[0,20]@d5d5fg5g")
+def main():
+    root = tk.Tk() 
+    root.update()
+
+    button = tk.Button(root, text="Open the OCLI file to work on", command=partial(select_file,root))
+    close_button = tk.Button(root, text="Exit", command=partial(close_window,root))
+    button.pack()  
+    close_button.pack()
+    root.mainloop() 
+
+    global COPIED_FILEPATH
+    COPIED_FILEPATH = copieFile(FILEPATH)
+
+# addCommandInOcli(destination_file, "+bd:BATIMENT@[0,20]@d5d5fg5g")

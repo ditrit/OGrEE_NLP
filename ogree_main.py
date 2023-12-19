@@ -8,6 +8,8 @@ import importlib
 import time
 from typing import Optional
 import os
+import warnings
+warnings.filterwarnings('ignore')
 
 import ogree_wiki as wiki
 importlib.reload(wiki)
@@ -196,7 +198,6 @@ def findRelations(processed_entry : Doc, dictEntities : dict, indexAction : int)
     
     if len(dictEntities) == 1 :
         INDEX_MAIN_ENTITY = list(dictEntities.keys())[0]
-        print("index_main_entity :", INDEX_MAIN_ENTITY)
         return {}
 
     dictRelations = {index : None for index in dictEntities.keys()} # empty dict that will be filled
@@ -221,7 +222,6 @@ def findRelations(processed_entry : Doc, dictEntities : dict, indexAction : int)
     # if only one entity is not attached to a relation keyword, it's the main one
     else :
         INDEX_MAIN_ENTITY = [index for index,relation in dictRelations.items() if relation == None][0]
-    print("index_main_entity :", INDEX_MAIN_ENTITY)
 
     # the hierarchy position : 0 is site, 3 is rack... etc
     hierarchyPosition = {index : list(wiki.ENTITIES.keys()).index(entity) for index, entity in dictEntities.items()}
@@ -608,24 +608,22 @@ def getKeyWords(processed_entry : Doc) -> dict :
 
 # TODO : the similarity func is very time-taking, we must shorten the process time or find another way
 
-def NL_to_OCLI() -> str :
+def NL_to_OCLI(ocliFile) -> str :
     FINAL_INSTRUCTION = ""
 
     ENTITIES_FULL_NAME = {"entity" : list(wiki.ENTITIES.keys())}
     KEY_WORDS_ALL = {**ENTITIES_FULL_NAME,  **PARAMETERS_DICT}
     FORBIDDEN_INDEX = []
 
-    EXISTING_ENTITY_NAMES = scrapping.scrapAllName("DEMO_BASIC.ocli")
+    EXISTING_ENTITY_NAMES = scrapping.scrapAllName(ocliFile)
 
     natural_entry = input("Enter a prompt. Please follow the instructions given.\n")
     processed_entry = nlp(natural_entry)
 
     KEY_WORDS_ENTRY = getKeyWords(processed_entry)
-    print(KEY_WORDS_ENTRY)
     FORBIDDEN_INDEX.extend(KEY_WORDS_ENTRY.keys())
 
     dictEntities = {index : processed_entry[index].text for index,keyword in KEY_WORDS_ENTRY.items() if keyword == "entity"}
-    print(dictEntities)
 
     # test detection
     list_key_param = list(KEY_WORDS_ENTRY.values())
@@ -645,9 +643,7 @@ def NL_to_OCLI() -> str :
     global INDEX_MAIN_SUBJECT
     INDEX_ACTION = [index for index,keyword in KEY_WORDS_ENTRY.items() if keyword in ACTIONS_DEFAULT.keys()][0]
     finalRelations = findRelations(processed_entry, dictEntities, INDEX_ACTION)
-    print("finalRelations : ", finalRelations)
     INDEX_MAIN_SUBJECT = findIndexMainSubject(processed_entry, KEY_WORDS_ENTRY, INDEX_ACTION, INDEX_MAIN_ENTITY)  
-    print("index main subject : ", INDEX_MAIN_SUBJECT)
 
     INDEXES_MAIN = {"subject" : INDEX_MAIN_SUBJECT, 
                     "action" : INDEX_ACTION, 
@@ -662,17 +658,14 @@ def NL_to_OCLI() -> str :
         stringName = "".join([processed_entry[index].text for index in valueIndexes])
         if stringName[-1] in ["/","\\"] : stringName = stringName[:-1]
         dictioEntityNames[entityIndex] = stringName
-    print("names : ",dictioEntityNames)
 
     if INDEX_MAIN_SUBJECT not in KEY_WORDS_ENTRY.keys() :
         # TODO : the dectection is different (key word set TO)
         value, indexes = findAssociatedValue(processed_entry, INDEX_ACTION, INDEX_MAIN_SUBJECT, FORBIDDEN_INDEX)
     
     association = associateParameters(processed_entry, KEY_WORDS_ENTRY, dictEntities, dictioEntityNames)
-    print("association between keyword and entity :", association)
 
     fullName = buildFullName(dictioEntityNames, dictEntities, finalRelations, INDEX_MAIN_ENTITY, EXISTING_ENTITY_NAMES)
-    print("Main entity full name :", fullName)
     if fullName == None:
         raise ValueError("Not all the parent tree is known to name the object.")
     
@@ -698,7 +691,6 @@ def NL_to_OCLI() -> str :
                 parameterValue, parameterIndex = get.FUNCTIONS[parameter](processed_entry, index, association[index][0], lastKeyWordIndex, nextKeyWordIndex, FORBIDDEN_INDEX)
                 FORBIDDEN_INDEX.extend(parameterIndex)
                 dictioEntityParameters[parameter] = parameterValue # store the value
-            print(dictioEntityParameters)
             FINAL_INSTRUCTION = tools.create(dictEntities[INDEX_MAIN_SUBJECT], dictioEntityParameters)
 
         elif KEY_WORDS_ENTRY[INDEX_ACTION] == "ACTION_NEGATIVE" :
@@ -750,15 +742,20 @@ def NL_to_OCLI() -> str :
 
     # check if parameters were not given
         
-    print("Final instruction :", FINAL_INSTRUCTION)
-
     return FINAL_INSTRUCTION
 
 if __name__ == "__main__":
     
-    init.select_file()
-    file = init.findDirectoryPath()
-    init.copieFile()
+    init.main()
+    repeat = True
 
-    # WORK IN PROGRESS, DO NOT TOUCH
+    while (repeat):
+        ocliCommand = NL_to_OCLI(init.FILEPATH)
+        print("Command created : " + ocliCommand)
+        satisfied = input("Satisfied ? (Yes : Press Enter, No : type n|N) ").lower()
+        if satisfied == "" or satisfied == "yes":
+            init.addCommandInOcli(ocliCommand)
+        another = input("Do you want to create another command ? (Yes : Press Enter, No : type n|N) ").lower()
+        if another != "" and another != "yes":
+            repeat = False
 
