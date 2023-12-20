@@ -5,6 +5,8 @@ from typing import Optional
 import re
 import ogree_wiki as wiki
 
+# TODO : récupération d'unités
+
 FUNCTIONS = globals()
 
 def template(processed_entry : Doc, index : int, attachedEntity : str, lastKeyWordIndex : int, nextKeyWordIndex : int, forbiddenIndexes : list = []) :
@@ -356,5 +358,26 @@ def type(processed_entry : Doc, index : int, attachedEntity : str, lastKeyWordIn
         return findKeyWord(processed_entry, index, attachedEntity, lastKeyWordIndex, nextKeyWordIndex, forbiddenIndexes, typeKeyWords)
 
 
+# def slot() :
+#     pass
 
+# def attribute() :
+#     pass
+
+# def font(processed_entry : type(nlp("")), index : int, lastKeyWordIndex : int, nextKeyWordIndex : int,entity="") ->  Optional[list] :
+#     #This function find the font of a label.
+#     #We slit the sentence in two parts
+#     next_words = processed_entry[index+1:nextKeyWordIndex]
+#     last_words = processed_entry[lastKeyWordIndex:index]
+#     print("next_word : ", next_words)
+#     findList = re.findall(r'#[ *][A-Z0-9a-z]{6}\b'," ".join([str(token) for token in next_words]))
+#     findList += re.findall('italic|bold'," ".join([str(token) for token in next_words]))
+#     if len(findList) == 0:
+#         findList = re.findall(r'#[ *][A-Z0-9a-z]{6}\b'," ".join([str(token) for token in last_words]))
+#         findList += re.findall('italic | bold'," ".join([str(token) for token in last_words]))
+#         if len(findList) == 0: 
+#             raise Exception("There wasn't any argument")
+    
+#     #We return the list of the argument associate to the font
+#     return findList
 
