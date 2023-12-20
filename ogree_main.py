@@ -257,7 +257,7 @@ def name(processed_entry : Doc,
          takenIndexes : list, 
          indexesMain : dict,
          EXISTING_ENTITY_NAMES : dict,
-         searchRawEnabled : bool = False) -> dict :
+         searchRawEnabled : bool = False) -> (dict,dict,list) :
 
     def isName(token : Token) -> bool :
         if (token.is_upper
@@ -269,9 +269,13 @@ def name(processed_entry : Doc,
         return False
 
     def findClose(processed_entry : Doc, index : int) -> (int|None) :
-        if index +1 <= len(processed_entry)-1 and isName(processed_entry[index+1]) :
+        if (index +1 <= len(processed_entry)-1 
+            and isName(processed_entry[index+1])
+            and index+1 not in newTakenIndexes) :
             return findFullName(processed_entry, index+1)
-        if 0 <= index -1 and isName(processed_entry[index-1]):
+        if (0 <= index -1 
+            and isName(processed_entry[index-1])
+            and index-1 not in newTakenIndexes) :
             return findFullName(processed_entry, index-1, False)
         return None
 
@@ -282,6 +286,9 @@ def name(processed_entry : Doc,
         currentIndex = index
         isNameFinished = False
         while not isNameFinished :
+            if currentIndex in newTakenIndexes : 
+                isNameFinished = True
+                continue
             currentToken = processed_entry[currentIndex]
             # if there is a dash, we take both current and next word (and the dash)
             if currentToken.lower_ in ["-","/","\\"] :
@@ -314,7 +321,9 @@ def name(processed_entry : Doc,
 
     IMPLICIT = ["current","main"]
 
+    newDictEntities = dictioEntities
     newDictioNameIndexes = dictioNameIndexes # dict with entityIndex : NameOfTheEntityIndex
+    newTakenIndexes = takenIndexes
 
     if len(newDictioNameIndexes) < len(dictioEntities) : # if not all names found
         # begin with the synonyms of "called"
@@ -326,20 +335,21 @@ def name(processed_entry : Doc,
             if attachedEntityIndex == None or attachedEntityIndex in newDictioNameIndexes.keys() :
                 continue
 
-            if (currentToken.similarity(nlp("called")[0]) > SIMILARITY_THRESHOLD
+            if (currentToken.similarity(nlp("called")[0]) > SIMILARITY_THRESHOLD # if "called", check right next to the token
                 and currentToken.i < len(processed_entry)-1
+                and currentToken.i+1 not in newTakenIndexes
                 # and currentToken.is_ancestor(processed_entry[currentToken.i +1])
                 and isName(processed_entry[currentToken.i +1])) :
                     attachedValueIndexes.extend(findFullName(processed_entry, currentToken.i +1))
 
             if len(list(currentToken.children)) != 0  and (not attachedValueIndexes) :
                 for token in currentToken.rights :
-                    if isName(token) :
+                    if isName(token) and token.i not in newTakenIndexes :
                         attachedValueIndexes.extend(findFullName(processed_entry, token.i))
                         break
                 if not attachedValueIndexes :
                     for token in list(currentToken.lefts)[::-1] :
-                        if isName(token) :
+                        if isName(token) and token.i not in newTakenIndexes :
                             attachedValueIndexes.extend(findFullName(processed_entry, token.i)) # we choose the rightmost
                             break 
 
@@ -348,13 +358,14 @@ def name(processed_entry : Doc,
                 for token in currentToken.ancestors :
                     if counter == 2 :
                         break
-                    if isName(token) :
+                    if isName(token) and token.i not in newTakenIndexes :
                         attachedValueIndexes.extend(findFullName(processed_entry, token.i))
                         break
                     else : counter += 1
                 
             if attachedValueIndexes and all([x not in newDictioNameIndexes.values() for x in attachedValueIndexes]) :          
                 newDictioNameIndexes[attachedEntityIndex] = attachedValueIndexes
+                newTakenIndexes.extend(attachedValueIndexes)
 
     if len(newDictioNameIndexes) < len(dictioEntities) : # if not all names found
 
@@ -365,26 +376,43 @@ def name(processed_entry : Doc,
             attachedValueIndexes = findClose(processed_entry, entityIndex)
             if attachedValueIndexes != None and attachedValueIndexes not in newDictioNameIndexes.values() :
                 newDictioNameIndexes[entityIndex] = attachedValueIndexes
+                newTakenIndexes.extend(attachedValueIndexes)
 
-
-    if searchRawEnabled :
-        # we seek here existing names specified without the type of entity (e.g. create a rack in R1)
-
+    if len(newDictioNameIndexes) < len(dictioEntities) : # if not all names found
+        
         for token in processed_entry : # look directly for a name
 
-            if isName(token) :
+            if token.i not in newTakenIndexes and isName(token) :
                 indexAttachedEntity = findAttachedEntity(processed_entry, token.i)
                 if (indexAttachedEntity != None
                     and indexAttachedEntity not in newDictioNameIndexes.keys()) :
                     attachedValueIndexes = findFullName(processed_entry, token.i)
                     if all([x not in newDictioNameIndexes.values() for x in attachedValueIndexes]) :
                         newDictioNameIndexes[indexAttachedEntity] = attachedValueIndexes
+                        newTakenIndexes.extend(attachedValueIndexes)
+
+    if searchRawEnabled :
+        # we seek here existing names specified without the type of entity (e.g. create a rack in R1)
+
+        for token in processed_entry : # look directly for a name
+
+            if token.i not in newTakenIndexes and isName(token) :
+                attachedValueIndexes = findFullName(processed_entry, token.i)
+                stringName = "".join([processed_entry[index].text for index in attachedValueIndexes])
+                if stringName[0] == "/" : stringName = stringName[1:]
+                for fullName, entity in EXISTING_ENTITY_NAMES.items() :
+                    match = re.findall(f"[-/\w]*/{stringName}$", fullName)
+                    if match :
+                        newDictioNameIndexes[attachedValueIndexes[0]] = attachedValueIndexes
+                        newDictEntities[attachedValueIndexes[0]] = entity
+                        newTakenIndexes.extend(attachedValueIndexes)
+
         
     # TODO : get current names
 
     # TODO : check for implicit words now
     
-    return newDictioNameIndexes
+    return newDictioNameIndexes, newDictEntities, newTakenIndexes
 
 def associateParameters(processed_entry : Doc, KEY_WORDS_ENTRY : dict, dictEntities : dict, dictioEntityNames : dict) -> dict :
     SPECIAL_KEY_WORD = ["for", "to"]
@@ -631,6 +659,15 @@ def NL_to_OCLI(ocliFile) -> str :
 
     dictEntities = {index : processed_entry[index].text for index,keyword in KEY_WORDS_ENTRY.items() if keyword == "entity"}
 
+    dictioNameIndexes, dictEntities, FORBIDDEN_INDEX = name(processed_entry,
+                                                            dictEntities,
+                                                            {},
+                                                            [index for index,parameter in KEY_WORDS_ENTRY.items() if parameter == "name"],
+                                                            FORBIDDEN_INDEX,
+                                                            {},
+                                                            EXISTING_ENTITY_NAMES,
+                                                            True)
+
     # test detection
     list_key_param = list(KEY_WORDS_ENTRY.values())
     count_action = 0 # the nb of action words indentified
@@ -656,21 +693,23 @@ def NL_to_OCLI(ocliFile) -> str :
                     "entity" : INDEX_MAIN_ENTITY}
     print("INDEXES_MAIN : ", INDEXES_MAIN)
 
+    dictioNameIndexes, dictEntities, FORBIDDEN_INDEX = name(processed_entry,
+                                                            dictEntities,
+                                                            dictioNameIndexes,
+                                                            [index for index,parameter in KEY_WORDS_ENTRY.items() if parameter == "name"],
+                                                            FORBIDDEN_INDEX,
+                                                            INDEXES_MAIN,
+                                                            EXISTING_ENTITY_NAMES,
+                                                            False)
+    
     dictioEntityNames = {}
-    dictioNameIndexes = {}
-    dictioNameIndexes = name(processed_entry,
-                             dictEntities,
-                             dictioNameIndexes,
-                             [index for index,parameter in KEY_WORDS_ENTRY.items() if parameter == "name"],
-                             FORBIDDEN_INDEX,
-                             INDEXES_MAIN,
-                             EXISTING_ENTITY_NAMES,
-                             False)
     for entityIndex, valueIndexes in dictioNameIndexes.items() :
         stringName = "".join([processed_entry[index].text for index in valueIndexes])
         if stringName[-1] in ["/","\\"] : stringName = stringName[:-1]
         dictioEntityNames[entityIndex] = stringName
+    print("dictioNameIndexes : ", dictioNameIndexes)
     print("dictioEntityNames : ",dictioEntityNames)
+    print("dictEntities : ", dictEntities)
 
     if INDEX_MAIN_SUBJECT not in KEY_WORDS_ENTRY.keys() :
         # TODO : the dectection is different (key word set TO)
@@ -709,6 +748,8 @@ def NL_to_OCLI(ocliFile) -> str :
                                                                           FORBIDDEN_INDEX)
                 FORBIDDEN_INDEX.extend(parameterIndex)
                 dictioEntityParameters[parameter] = parameterValue # store the value
+            
+            print("dictioEntityParameters : ", dictioEntityParameters)
             FINAL_INSTRUCTION = tools.create(dictEntities[INDEX_MAIN_SUBJECT], dictioEntityParameters)
 
         elif KEY_WORDS_ENTRY[INDEX_ACTION] == "ACTION_NEGATIVE" :
