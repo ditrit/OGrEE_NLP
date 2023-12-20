@@ -633,9 +633,13 @@ def buildFullName(dictioEntityNames : dict, dictEntities : dict, finalRelations 
                 # If a hole has been detected previously and a parent has been detected, such a name with a hole is searched
                 if holeGluer != None:
                     for existingName in EXISTING_ENTITY_NAMES.keys():
-                        correspondingName = re.findall(f"{holeGluer}/[-/\w]+{partialName}$", existingName)
+                        partialSplit = partialName.split("/")
+                        beginningPartialName = ""
+                        for splitted in partialSplit[:-1]:
+                            beginningPartialName += "/" + splitted
+                        correspondingName = re.findall(f"{holeGluer}/[-/\w]+{beginningPartialName}$", existingName)
                         if EXISTING_ENTITY_NAMES[existingName] == dictEntities[entityIndex] and len(correspondingName) > 0:
-                            return existingName
+                            return existingName + partialName
                     raise ValueError("One of the parent name is incorrect or not all the parent tree is known to name the object.")
                 # Search for existing entity with the same partial name
                 for existingName in EXISTING_ENTITY_NAMES.keys():
