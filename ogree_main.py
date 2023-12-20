@@ -471,6 +471,7 @@ def slashInName(parentName : str, partialName : str, EXISTING_ENTITY_NAMES : dic
         else:
             parentName = "/" + parentName
     # ici commence l'enfer
+    knownEntity = 0
     knownDevice = 0
     parentSplit = parentName[1:].split("/")
     parentSplit.reverse()
@@ -487,18 +488,22 @@ def slashInName(parentName : str, partialName : str, EXISTING_ENTITY_NAMES : dic
     for i, subParent in enumerate(parentSplit):
         existingEntityType = None
         if i == 0 and prevEntityType == None:
-            knownDevice += 1
+            knownEntity += 1
             prevEntityType = dictEntities[entityIndex]
+            if existingEntityType == "device":
+                knownDevice += 1
             continue
         for existingName in EXISTING_ENTITY_NAMES.keys():
             if len(existingName) >= len(subParent) and subParent == existingName[-len(subParent):]:
                 existingEntityType = EXISTING_ENTITY_NAMES[existingName]
-                if prevEntityType != existingEntityType:
+                if existingEntityType == "device":
                     knownDevice += 1
+                if prevEntityType != existingEntityType:
+                    knownEntity += 1
                 break
         if existingEntityType == None:
             if prevEntityType == "site":
-                knownDevice = -1
+                knownEntity = -1
                 break
             raise ValueError("One of the parent name is incorrect.")
         prevEntityType = existingEntityType
@@ -506,9 +511,9 @@ def slashInName(parentName : str, partialName : str, EXISTING_ENTITY_NAMES : dic
     partialName = parentName + partialName
     if partialName[-1] == "/":
         partialName = partialName[:-1]
-    return partialName, knownDevice
+    return partialName, knownEntity, knownDevice
 
-def buildFullName(dictioEntityNames : dict, dictEntities : dict, finalRelations : dict, entityIndex : int, EXISTING_ENTITY_NAMES : dict) -> str :
+def buildFullName(dictioEntityNames : dict, dictEntities : dict, finalRelations : dict, entityIndex : int, EXISTING_ENTITY_NAMES : dict, actionType : str) -> str :
     """Build the full name of the entity specified"""
 
     # Start with the partial name : the name of the entity specified
@@ -533,11 +538,12 @@ def buildFullName(dictioEntityNames : dict, dictEntities : dict, finalRelations 
 
     # Check if the name has been written with / character 
     if "/" in partialName:
-        partialName, knownDevice = slashInName(partialName, "", EXISTING_ENTITY_NAMES, dictEntities, entityIndex)
-        if knownDevice == -1:
+        partialName, knownEntity, knownDevice = slashInName(partialName, "", EXISTING_ENTITY_NAMES, dictEntities, entityIndex)
+        if knownEntity == -1:
             return partialName
         nEntity = partialName.count("/")
-        startingLevel -= (nEntity-1-supDeviceCounter)
+        if not(knownEntity == 1 and nEntity > 1):
+            startingLevel -= (nEntity-1-supDeviceCounter)
         if nEntity >= list(wiki.ENTITIES.keys()).index("device"):
             startingLevel = list(wiki.ENTITIES.keys()).index("site") - 1
         if startingLevel == -1:
@@ -565,10 +571,10 @@ def buildFullName(dictioEntityNames : dict, dictEntities : dict, finalRelations 
                     holeGluer = dictioEntityNames[indexParent]
                 else:
                     if "/" in dictioEntityNames[indexParent]:
-                        partialName, knownDevice = slashInName(dictioEntityNames[indexParent], partialName, EXISTING_ENTITY_NAMES, dictEntities, entityIndex)
-                        if knownDevice == -1:
+                        partialName, knownEntity, knownDevice = slashInName(dictioEntityNames[indexParent], partialName, EXISTING_ENTITY_NAMES, dictEntities, entityIndex)
+                        if knownEntity == -1:
                             return partialName
-                        levelCounter -= knownDevice
+                        levelCounter -= (knownEntity+knownDevice-1)
                     else:
                         partialName = "/" + dictioEntityNames[indexParent] + partialName
                 levelCounter -= 1
@@ -603,6 +609,20 @@ def buildFullName(dictioEntityNames : dict, dictEntities : dict, finalRelations 
     
     if partialName[:2] != "/P/":
         partialName = "/P" + partialName
+    if holeDetected:
+        partialName = partialName[2:]
+        if actionType == "ACTION_POSITIVE":
+            partialSplit = partialName.split("/")
+            beginningPartialName = ""
+            for splitted in partialSplit[:-1]:
+                beginningPartialName += "/" + splitted
+            for existingName in EXISTING_ENTITY_NAMES.keys():
+                if len(existingName) >= len(beginningPartialName) and beginningPartialName == existingName[-len(beginningPartialName):]:
+                    return existingName + "/" + partialSplit[-1]
+        else:
+            for existingName in EXISTING_ENTITY_NAMES.keys():
+                if len(existingName) >= len(partialName) and partialName == existingName[-len(partialName):]:
+                    return existingName
 
     # TODO : adapt hierarchyPosition
 
@@ -668,6 +688,7 @@ def NL_to_OCLI(ocliFile : str) -> str :
     TAKEN_INDEXES.extend(KEY_WORDS_ENTRY.keys())
 
     dictEntities = {index : processed_entry[index].text for index,keyword in KEY_WORDS_ENTRY.items() if keyword == "entity"}
+    print("dictEntities :", dictEntities)
 
     # test detection
     list_key_param = list(KEY_WORDS_ENTRY.values())
@@ -716,7 +737,8 @@ def NL_to_OCLI(ocliFile : str) -> str :
     
     association = associateParameters(processed_entry, KEY_WORDS_ENTRY, dictEntities, dictioEntityNames)
 
-    fullName = buildFullName(dictioEntityNames, dictEntities, finalRelations, INDEX_MAIN_ENTITY, EXISTING_ENTITY_NAMES)
+    fullName = buildFullName(dictioEntityNames, dictEntities, finalRelations, INDEX_MAIN_ENTITY, EXISTING_ENTITY_NAMES, KEY_WORDS_ENTRY[INDEX_ACTION])
+    print(fullName)
     if fullName == None:
         raise ValueError("Not all the parent tree is known to name the object.")
     
@@ -772,7 +794,7 @@ def NL_to_OCLI(ocliFile : str) -> str :
                                                                           nextKeyWordIndex, 
                                                                           TAKEN_INDEXES)
                 TAKEN_INDEXES.extend(parameterIndex)
-                fullName = buildFullName(dictioEntityNames, dictEntities, finalRelations, association[index][0], EXISTING_ENTITY_NAMES)
+                fullName = buildFullName(dictioEntityNames, dictEntities, finalRelations, association[index][0], EXISTING_ENTITY_NAMES, KEY_WORDS_ENTRY[INDEX_ACTION])
                 if fullName == None:
                     raise ValueError("Not all the parent tree is known to name the object.")
                 FINAL_INSTRUCTION += tools.createAttribute(fullName, parameter, parameterValue) + "\n"
@@ -780,7 +802,7 @@ def NL_to_OCLI(ocliFile : str) -> str :
         elif KEY_WORDS_ENTRY[INDEX_ACTION] == "ALTERATION" :
             # REQUIRES : the full name, the parameter and its value
             if not fullName in EXISTING_ENTITY_NAMES.keys():
-                raise ValueError(f"This {dictEntities[INDEX_MAIN_SUBJECT]} doesn't exist.")
+                raise ValueError(f"This {dictEntities[INDEX_MAIN_ENTITY]} doesn't exist.")
             allEntryItemsList = list(KEY_WORDS_ENTRY.items())
             for counter,(index,parameter) in enumerate(allEntryItemsList) :
                 if (not parameter in PARAMETERS_DICT_KEYS) or parameter == "name": # or association[index][0] != INDEX_MAIN_ENTITY
@@ -795,7 +817,7 @@ def NL_to_OCLI(ocliFile : str) -> str :
                                                                           nextKeyWordIndex, 
                                                                           TAKEN_INDEXES)
                 TAKEN_INDEXES.extend(parameterIndex)
-                fullName = buildFullName(dictioEntityNames, dictEntities, finalRelations, association[index][0], EXISTING_ENTITY_NAMES)
+                fullName = buildFullName(dictioEntityNames, dictEntities, finalRelations, association[index][0], EXISTING_ENTITY_NAMES, KEY_WORDS_ENTRY[INDEX_ACTION])
                 if fullName == None:
                     raise ValueError("Not all the parent tree is known to name the object.")
                 FINAL_INSTRUCTION += tools.setAttribute(fullName, parameter, parameterValue, processed_entry[association[index][0]].lower_) + "\n"
