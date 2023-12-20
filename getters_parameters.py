@@ -9,6 +9,19 @@ import ogree_wiki as wiki
 
 FUNCTIONS = globals()
 
+def convertToUnit(value, unit) :
+    FACTORS = {
+        'km': 1000,
+        'm': 1,
+        'dm': 0.1,
+        'cm': 0.01,
+        'mm': 0.001
+    }
+    if unit and unit in FACTORS.keys() :
+        return float(value)*FACTORS[unit]
+    else :
+        return value
+
 def template(processed_entry : Doc, index : int, attachedEntity : str, lastKeyWordIndex : int, nextKeyWordIndex : int, forbiddenIndexes : list = []) :
     next_words = [token for token in processed_entry[index+1:nextKeyWordIndex] if token.i not in forbiddenIndexes]
     previous_words = [token for token in processed_entry[lastKeyWordIndex+1:index] if token.i not in forbiddenIndexes]
@@ -112,13 +125,13 @@ def position(processed_entry : Doc, index : int, attachedEntity : str, lastKeyWo
 
     positionList = []
     for token in next_words :
-        foundValue = re.findall("^[-]*[0-9]+[.]*[0-9]*", token.text)
+        foundValue = re.findall("^[-]*\d+[.]*\d*", token.text)
         if foundValue :  
             positionList.append((foundValue[0], token.i))
     if not len(positionList) in LENGTH_CRITERIA : # if none found in next words
         positionList = []
         for token in previous_words :
-            foundValue = re.findall("^[-]*[0-9]+[.]*[0-9]*", token.text)
+            foundValue = re.findall("^[-]*\d+[.]*\d*", token.text)
             if foundValue :  
                 positionList.append((foundValue[0], token.i))
 
@@ -159,13 +172,13 @@ def rotation(processed_entry : Doc, index : int, attachedEntity : str, lastKeyWo
     rotationList = []
 
     for token in next_words :
-        foundValue = re.findall("^[-]*[0-9]+[.]*[0-9]*", token.text)
+        foundValue = re.findall("^[-]*\d+[.]*\d*", token.text)
         if foundValue :  
             rotationList.append((foundValue[0], token.i))
     if len(rotationList) != LENGTH_CRITERIA :
         rotationList = []
         for token in previous_words :
-            foundValue = re.findall("^[-]*[0-9]+[.]*[0-9]*", token.text)
+            foundValue = re.findall("^[-]*\d+[.]*\d*", token.text)
             if foundValue :  
                 rotationList.append((foundValue[0], token.i))
 
@@ -194,13 +207,13 @@ def size(processed_entry : Doc, index : int, attachedEntity : str, lastKeyWordIn
 
     sizeList = []
     for token in next_words :
-        foundValue = re.findall("^[-]*[0-9]+[.]*[0-9]*", token.text)
+        foundValue = re.findall("^[-]*\d+[.]*\d*", token.text)
         if foundValue :  
             sizeList.append((foundValue[0], token.i))
     if len(sizeList) != LENGTH_CRITERIA : # if none found in next words
         sizeList = []
         for token in previous_words :
-            foundValue = re.findall("^[-]*[0-9]+[.]*[0-9]*", token.text)
+            foundValue = re.findall("^[-]*\d+[.]*\d*", token.text)
             if foundValue :
                 sizeList.append((foundValue[0], token.i))
 
@@ -252,6 +265,7 @@ def axisOrientation(processed_entry : Doc, index : int, attachedEntity : str, la
     return resultValues, resultIndexes
 
 
+# TODO : to change ?
 def unit(processed_entry : Doc, index : int, attachedEntity : str, lastKeyWordIndex : int, nextKeyWordIndex : int, forbiddenIndexes : list = []) :
 
     DICT_UNIT = {
