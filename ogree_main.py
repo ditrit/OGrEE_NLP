@@ -8,6 +8,7 @@ import importlib
 import time
 from typing import Optional
 import os
+
 import warnings
 warnings.filterwarnings('ignore')
 
@@ -104,14 +105,14 @@ def findIndexMainSubject(processed_entry : Doc, dictioIndexKeyWords : dict, inde
     else : # if there are at least two tokens at the same length from the action
 
         if actionType == "ALTERATION" : # if alteration, prioritize known parameters
-            resultOnlyParameters = [index for index in result if dictioIndexKeyWords[index] in PARAMETERS_DICT.keys()]
+            resultOnlyParameters = [index for index in result if index in dictioIndexKeyWords.keys() and dictioIndexKeyWords[index] in PARAMETERS_DICT.keys()]
             if bool(resultOnlyParameters) :
                 return resultOnlyParameters[0]
             else :
                 return result[0]
             
         else : # prioritize entities
-            resultOnlyEntity = [index for index in result if dictioIndexKeyWords[index] == "entity"]
+            resultOnlyEntity = [index for index in result if index in dictioIndexKeyWords.keys() and dictioIndexKeyWords[index] == "entity"]
             if not bool(resultOnlyEntity) :
                 return result[0]
             elif len(resultOnlyEntity) == resultLength and indexMainEntity in result :
@@ -249,11 +250,19 @@ def findRelations(processed_entry : Doc, dictEntities : dict, indexAction : int)
 
     return finalRelations
 
-def name(processed_entry : Doc, dictioEntities : dict, listNameSynonyms : list, indexesMain : dict) -> int :
+def name(processed_entry : Doc, 
+         dictioEntities : dict, 
+         dictioNameIndexes : dict, 
+         listNameSynonyms : list, 
+         takenIndexes : list, 
+         indexesMain : dict,
+         EXISTING_ENTITY_NAMES : dict,
+         searchRawEnabled : bool = False) -> dict :
 
     def isName(token : Token) -> bool :
-        if (token.is_upper 
-            or (token.pos_ in ["PROPN","PUNCT","X"] and token.text != ",")
+        if (token.is_upper
+            or not token.has_vector
+            or (token.pos_ in ["NOUN","PROPN","PUNCT","X"] and token.text != ",")
             or (token.i +1 < len(processed_entry) and processed_entry[token.i+1].lower_ in ["-","/","\\"])
             or (token.i -1 > 0 and processed_entry[token.i-1].lower_ in ["-","/","\\"])) :
             return True
@@ -296,7 +305,7 @@ def name(processed_entry : Doc, dictioEntities : dict, listNameSynonyms : list, 
         for token in processed_entry[index].ancestors :
             if counter == 3 :
                 break
-            if token.i in dictioEntities.keys() and token.i not in dictioEntityNames.keys() :
+            if token.i in dictioEntities.keys() and token.i not in newDictioNameIndexes.keys() :
                 return token.i
             if token.i == indexesMain["action"] :
                 return indexesMain["entity"]
@@ -305,81 +314,77 @@ def name(processed_entry : Doc, dictioEntities : dict, listNameSynonyms : list, 
 
     IMPLICIT = ["current","main"]
 
-    dictioEntityNames = {} # dict with entityIndex : NameOfTheEntityIndex
+    newDictioNameIndexes = dictioNameIndexes # dict with entityIndex : NameOfTheEntityIndex
 
-    # begin with the synonyms of "called"
-    for nameSynonymIndex in listNameSynonyms :
-        currentToken = processed_entry[nameSynonymIndex]
-        attachedEntityIndex = findAttachedEntity(processed_entry, nameSynonymIndex)
-        attachedValueIndexes = []
+    if len(newDictioNameIndexes) < len(dictioEntities) : # if not all names found
+        # begin with the synonyms of "called"
+        for nameSynonymIndex in listNameSynonyms :
+            currentToken = processed_entry[nameSynonymIndex]
+            attachedEntityIndex = findAttachedEntity(processed_entry, nameSynonymIndex)
+            attachedValueIndexes = []
 
-        if attachedEntityIndex == None or attachedEntityIndex in dictioEntityNames.keys() :
-            continue
+            if attachedEntityIndex == None or attachedEntityIndex in newDictioNameIndexes.keys() :
+                continue
 
-        if (currentToken.similarity(nlp("called")[0]) > SIMILARITY_THRESHOLD
-            and currentToken.i < len(processed_entry)-1
-            # and currentToken.is_ancestor(processed_entry[currentToken.i +1])
-            and isName(processed_entry[currentToken.i +1])) :
-                attachedValueIndexes.extend(findFullName(processed_entry, currentToken.i +1))
+            if (currentToken.similarity(nlp("called")[0]) > SIMILARITY_THRESHOLD
+                and currentToken.i < len(processed_entry)-1
+                # and currentToken.is_ancestor(processed_entry[currentToken.i +1])
+                and isName(processed_entry[currentToken.i +1])) :
+                    attachedValueIndexes.extend(findFullName(processed_entry, currentToken.i +1))
 
-        if len(list(currentToken.children)) != 0  and (not attachedValueIndexes) :
-            for token in currentToken.rights :
-                if isName(token) :
-                    attachedValueIndexes.extend(findFullName(processed_entry, token.i))
-                    break
-            if not attachedValueIndexes :
-                for token in list(currentToken.lefts)[::-1] :
+            if len(list(currentToken.children)) != 0  and (not attachedValueIndexes) :
+                for token in currentToken.rights :
                     if isName(token) :
-                        attachedValueIndexes.extend(findFullName(processed_entry, token.i)) # we choose the rightmost
-                        break 
+                        attachedValueIndexes.extend(findFullName(processed_entry, token.i))
+                        break
+                if not attachedValueIndexes :
+                    for token in list(currentToken.lefts)[::-1] :
+                        if isName(token) :
+                            attachedValueIndexes.extend(findFullName(processed_entry, token.i)) # we choose the rightmost
+                            break 
 
-        if len(list(currentToken.ancestors)) != 0 and not attachedValueIndexes :
-            counter = 0
-            for token in currentToken.ancestors :
-                if counter == 2 :
-                    break
-                if isName(token) :
-                    attachedValueIndexes.extend(findFullName(processed_entry, token.i))
-                    break
-                else : counter += 1
-            
-        if attachedValueIndexes and all([x not in dictioEntityNames.values() for x in attachedValueIndexes]) :          
-            dictioEntityNames[attachedEntityIndex] = attachedValueIndexes
+            if len(list(currentToken.ancestors)) != 0 and not attachedValueIndexes :
+                counter = 0
+                for token in currentToken.ancestors :
+                    if counter == 2 :
+                        break
+                    if isName(token) :
+                        attachedValueIndexes.extend(findFullName(processed_entry, token.i))
+                        break
+                    else : counter += 1
+                
+            if attachedValueIndexes and all([x not in newDictioNameIndexes.values() for x in attachedValueIndexes]) :          
+                newDictioNameIndexes[attachedEntityIndex] = attachedValueIndexes
 
-    if len(dictioEntityNames) < len(dictioEntities) : # if not all names found
+    if len(newDictioNameIndexes) < len(dictioEntities) : # if not all names found
 
         # if the name if right beside the entity
         for entityIndex,_ in dictioEntities.items() :
-            if entityIndex in dictioEntityNames.keys() :
+            if entityIndex in newDictioNameIndexes.keys() :
                 continue
             attachedValueIndexes = findClose(processed_entry, entityIndex)
-            if attachedValueIndexes != None and attachedValueIndexes not in dictioEntityNames.values() :
-                dictioEntityNames[entityIndex] = attachedValueIndexes
+            if attachedValueIndexes != None and attachedValueIndexes not in newDictioNameIndexes.values() :
+                newDictioNameIndexes[entityIndex] = attachedValueIndexes
 
-    if len(dictioEntityNames) < len(dictioEntities) : # if not all names found
+
+    if searchRawEnabled :
+        # we seek here existing names specified without the type of entity (e.g. create a rack in R1)
 
         for token in processed_entry : # look directly for a name
 
             if isName(token) :
                 indexAttachedEntity = findAttachedEntity(processed_entry, token.i)
                 if (indexAttachedEntity != None
-                    and indexAttachedEntity not in dictioEntityNames.keys()) :
+                    and indexAttachedEntity not in newDictioNameIndexes.keys()) :
                     attachedValueIndexes = findFullName(processed_entry, token.i)
-                    if all([x not in dictioEntityNames.values() for x in attachedValueIndexes]) :
-                        dictioEntityNames[indexAttachedEntity] = attachedValueIndexes
-
-    # if len(dictioEntityNames) < len(dictioEntities) : # if still not all names found
-    #     file = open(NAME_FILE_OCLI)
-    #     file_list = file.readlines()
-    #     file_list = [item.rstrip() for item in file_list]
-    #     for i in range(len(file_list)-1, -1, -1):
-    #         pass
+                    if all([x not in newDictioNameIndexes.values() for x in attachedValueIndexes]) :
+                        newDictioNameIndexes[indexAttachedEntity] = attachedValueIndexes
         
     # TODO : get current names
 
     # TODO : check for implicit words now
     
-    return dictioEntityNames
+    return newDictioNameIndexes
 
 def associateParameters(processed_entry : Doc, KEY_WORDS_ENTRY : dict, dictEntities : dict, dictioEntityNames : dict) -> dict :
     SPECIAL_KEY_WORD = ["for", "to"]
@@ -596,7 +601,7 @@ def getKeyWords(processed_entry : Doc) -> dict :
         # if "called" or a synonym is used for a parameter and not for an entity
         if match[1] == "name" and (lastParameter == token.head or lastParameter in token.children) :
             continue
-        if match[1] == lastParameter and match[1] != "name" :
+        if match[1] == lastParameter and match[1] not in ["name","position"] :
             continue
         if match[0] > SIMILARITY_THRESHOLD :
             # if is considered a key word, is added to the dict
@@ -621,6 +626,7 @@ def NL_to_OCLI(ocliFile) -> str :
     processed_entry = nlp(natural_entry)
 
     KEY_WORDS_ENTRY = getKeyWords(processed_entry)
+    print("KEY_WORDS_ENTRY : ", KEY_WORDS_ENTRY)
     FORBIDDEN_INDEX.extend(KEY_WORDS_ENTRY.keys())
 
     dictEntities = {index : processed_entry[index].text for index,keyword in KEY_WORDS_ENTRY.items() if keyword == "entity"}
@@ -648,16 +654,23 @@ def NL_to_OCLI(ocliFile) -> str :
     INDEXES_MAIN = {"subject" : INDEX_MAIN_SUBJECT, 
                     "action" : INDEX_ACTION, 
                     "entity" : INDEX_MAIN_ENTITY}
+    print("INDEXES_MAIN : ", INDEXES_MAIN)
 
     dictioEntityNames = {}
+    dictioNameIndexes = {}
     dictioNameIndexes = name(processed_entry,
                              dictEntities,
+                             dictioNameIndexes,
                              [index for index,parameter in KEY_WORDS_ENTRY.items() if parameter == "name"],
-                             INDEXES_MAIN)
+                             FORBIDDEN_INDEX,
+                             INDEXES_MAIN,
+                             EXISTING_ENTITY_NAMES,
+                             False)
     for entityIndex, valueIndexes in dictioNameIndexes.items() :
         stringName = "".join([processed_entry[index].text for index in valueIndexes])
         if stringName[-1] in ["/","\\"] : stringName = stringName[:-1]
         dictioEntityNames[entityIndex] = stringName
+    print("dictioEntityNames : ",dictioEntityNames)
 
     if INDEX_MAIN_SUBJECT not in KEY_WORDS_ENTRY.keys() :
         # TODO : the dectection is different (key word set TO)
@@ -688,7 +701,12 @@ def NL_to_OCLI(ocliFile) -> str :
                 nextKeyWordIndex = len(processed_entry) if counter == len(allEntryItemsList)-1 else allEntryItemsList[counter+1][0]
                 # get the parameter value
                 # TODO : change to the get file
-                parameterValue, parameterIndex = get.FUNCTIONS[parameter](processed_entry, index, association[index][0], lastKeyWordIndex, nextKeyWordIndex, FORBIDDEN_INDEX)
+                parameterValue, parameterIndex = get.FUNCTIONS[parameter](processed_entry, 
+                                                                          index, 
+                                                                          processed_entry[association[index][0]].lower_, 
+                                                                          lastKeyWordIndex, 
+                                                                          nextKeyWordIndex, 
+                                                                          FORBIDDEN_INDEX)
                 FORBIDDEN_INDEX.extend(parameterIndex)
                 dictioEntityParameters[parameter] = parameterValue # store the value
             FINAL_INSTRUCTION = tools.create(dictEntities[INDEX_MAIN_SUBJECT], dictioEntityParameters)
@@ -709,7 +727,12 @@ def NL_to_OCLI(ocliFile) -> str :
                 lastKeyWordIndex = 0 if counter == 0 else allEntryItemsList[counter-1][0]
                 nextKeyWordIndex = len(processed_entry) if counter == len(allEntryItemsList)-1 else allEntryItemsList[counter+1][0]
                 # get the parameter value
-                parameterValue, parameterIndex = get.FUNCTIONS[parameter](processed_entry, index, association[index][0], lastKeyWordIndex, nextKeyWordIndex, FORBIDDEN_INDEX)
+                parameterValue, parameterIndex = get.FUNCTIONS[parameter](processed_entry,
+                                                                          index, 
+                                                                          processed_entry[association[index][0]].lower_, 
+                                                                          lastKeyWordIndex, 
+                                                                          nextKeyWordIndex, 
+                                                                          FORBIDDEN_INDEX)
                 FORBIDDEN_INDEX.extend(parameterIndex)
                 fullName = buildFullName(dictioEntityNames, dictEntities, finalRelations, association[index][0], EXISTING_ENTITY_NAMES)
                 if fullName == None:
@@ -727,12 +750,17 @@ def NL_to_OCLI(ocliFile) -> str :
                 lastKeyWordIndex = 0 if counter == 0 else allEntryItemsList[counter-1][0]
                 nextKeyWordIndex = len(processed_entry) if counter == len(allEntryItemsList)-1 else allEntryItemsList[counter+1][0]
                 # get the parameter value
-                parameterValue, parameterIndex = get.FUNCTIONS[parameter](processed_entry, index, association[index][0], lastKeyWordIndex, nextKeyWordIndex, FORBIDDEN_INDEX)
+                parameterValue, parameterIndex = get.FUNCTIONS[parameter](processed_entry, 
+                                                                          index, 
+                                                                          processed_entry[association[index][0]].lower_, 
+                                                                          lastKeyWordIndex, 
+                                                                          nextKeyWordIndex, 
+                                                                          FORBIDDEN_INDEX)
                 FORBIDDEN_INDEX.extend(parameterIndex)
                 fullName = buildFullName(dictioEntityNames, dictEntities, finalRelations, association[index][0], EXISTING_ENTITY_NAMES)
                 if fullName == None:
                     raise ValueError("Not all the parent tree is known to name the object.")
-                FINAL_INSTRUCTION += tools.setAttribute(fullName, parameter, parameterValue) + "\n"
+                FINAL_INSTRUCTION += tools.setAttribute(fullName, parameter, parameterValue, processed_entry[association[index][0]].lower_) + "\n"
         
         else:
             raise NotImplementedError("The action '"+KEY_WORDS_ENTRY[INDEX_ACTION]+"' has not been implemented for '"+KEY_WORDS_ENTRY[INDEX_MAIN_SUBJECT]+"' as main subject")

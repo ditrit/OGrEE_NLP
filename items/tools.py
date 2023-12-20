@@ -21,10 +21,10 @@ def setName(oldName, newName : str) -> str:
         raise ValueError("The new name is invalid because it does not respect the convention of the parent name")
     return "{}:name={}".format(oldName, newName)
 
-def setAttribute(name : str, attributeName : str, attributeArgument) -> str:
+def setAttribute(name : str, attributeName : str, attributeArgument, attachedEntity = "") -> str:
     """Modifies an attribute of an object with a given argument"""
     if attributeName in CONFORMITY_CHECK:
-        if not CONFORMITY_CHECK[attributeName](attributeArgument):
+        if not CONFORMITY_CHECK[attributeName](attributeArgument, attachedEntity):
             raise ValueError("The new {} is invalid because the value {} is incorrect".format(attributeName,attributeArgument))
     return "{}:{}={}".format(name,attributeName,attributeArgument)
 
@@ -55,11 +55,11 @@ def isNameConform(name : str, entity="") -> bool:
     specifications for the name"""
     return type(name) == str
 
-def isPositionConform(position : list,entity="") -> bool:
+def isPositionConform(position : list, entity = "") -> bool:
     """Verifies that the list given in argument represents a position"""
     match entity:
         case 'device':
-            return len(position) == 1 and isListOfNumbers(position)
+            return type(position) == int
         case 'rack':
             return (len(position) == 2 or len(position) ==3) and isListOfNumbers(position)
         case 'corridor':

@@ -14,7 +14,8 @@ def template(processed_entry : Doc, index : int, attachedEntity : str, lastKeyWo
     previous_words = [token for token in processed_entry[lastKeyWordIndex+1:index] if token.i not in forbiddenIndexes]
     
     def isTemplate(token : Token) -> bool :
-        if token.pos_ in ["NOUN", "PROPN", "PUNCT", "X"] and token.text != "," : 
+        if (not token.has_vector
+            or (token.pos_ in ["NOUN", "PROPN", "PUNCT", "X"] and token.text != ",")) : 
             return True
         return False   
 
@@ -126,7 +127,7 @@ def position(processed_entry : Doc, index : int, attachedEntity : str, lastKeyWo
 
     resultValues = [float(x[0]) for x in positionList]
     if attachedEntity == "device" :
-        resultValues = resultValues[0]
+        resultValues = int(resultValues[0])
     resultIndexes = [x[1] for x in positionList]
     return resultValues, resultIndexes
 
