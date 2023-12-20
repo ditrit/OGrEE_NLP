@@ -596,7 +596,6 @@ def buildFullName(dictioEntityNames : dict, dictEntities : dict, finalRelations 
     return partialName.upper()
 
 def getKeyWords(processed_entry : Doc) -> dict :
-    # TODO : add already existing entity names
     ENTITIES_FULL_NAME = {"entity" : list(wiki.ENTITIES.keys())}
     KEY_WORDS_ALL = {**ENTITIES_FULL_NAME,  **PARAMETERS_DICT}
 
@@ -605,7 +604,6 @@ def getKeyWords(processed_entry : Doc) -> dict :
     lastParameter = None
     for index,token in enumerate(processed_entry) :
         matching_list = [] # list of tuples with the similarity score and type of key word (for each key word)
-        # TODO : name without entity specified
         if token.pos_ == "VERB" and str(token) == token.lemma_ and token.head == token : # 2nd test : if infinitive verb
             for parameter in ACTIONS_DEFAULT.keys() :
                 if token.lower_ in ACTIONS_DEFAULT[parameter] :
