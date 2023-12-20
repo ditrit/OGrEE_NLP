@@ -33,7 +33,7 @@ SIMILARITY_THRESHOLD = 0.5
 
 PARAMETERS_DICT = {
             "name" : ["name","called"],
-            "position" : ["position","at","located","posU","centered","centerXY","startPosition","startPos","endPosition",],
+            "position" : ["position","at","located","posU","centered","centerXY","startPosition","startPos","endPosition","from"],
             "rotation" : ["rotation","turned","degree"],
             "size" : ["size","dimensions","height","sizeU","sizeXY"],
             "template" : ["template"],
@@ -43,7 +43,7 @@ PARAMETERS_DICT = {
             "color" : ["color","usableColor","reservedColor","technicalColor"] + list(wiki.COLORS_HEX_BASIC.keys()), 
             "side" : ["side"],
             "temperature" : ["temperature","cold","warm"],
-            "type" : ["type","wall","wireframe","plain"],
+            "type" : ["type","wireframe","plain"],
             # "reserved" : ["reserved"],
             # "technical" : ["technical"]
             }
@@ -215,11 +215,24 @@ def findRelations(processed_entry : Doc, dictEntities : dict, indexAction : int)
     for index in dictEntities.keys() :
         for ancestor in processed_entry[index].ancestors :
             for relation in RELATIONS.keys() :
-                if max([ancestor.similarity(nlp(word)[0]) > SIMILARITY_THRESHOLD for word in RELATIONS[relation]]) :
+                if max([ancestor.similarity(nlp(word)[0]) > 0.8 for word in RELATIONS[relation]]) :
                     if ancestor.lower_ == "of" and ancestor.head.i not in dictEntities.keys() : continue
                     dictRelations[index] = relation
                     break
 
+            if index in dictRelations.keys() :
+                break    
+        
+        if index-1 > 0 :
+            for relation in RELATIONS.keys() :
+                if max([processed_entry[index-1].similarity(nlp(word)[0]) > 0.8 for word in RELATIONS[relation]]) :
+                    if processed_entry[index-1].lower_ == "of" and processed_entry[index-1].head.i not in dictEntities.keys() : continue
+                    dictRelations[index] = relation
+                    break
+
+    
+
+    print("dictRelations : ", dictRelations)
     # if zero or more than 1 entities don't have a relation
     withoutRelationCounter = list(dictRelations.values()).count(None)
     if  withoutRelationCounter != 1 :
@@ -676,6 +689,7 @@ def getKeyWords(processed_entry : Doc) -> dict :
     # we detect key words in the sentence given and put them into KEY_WORDS_ENTRY
     lastParameter = None, None
     for index,token in enumerate(processed_entry) :
+        # print(KEY_WORDS_ENTRY, lastParameter)
         matching_list = [] # list of tuples with the similarity score and type of key word (for each key word)
         if token.pos_ == "VERB" and str(token) == token.lemma_ and token.head == token : # 2nd test : if infinitive verb
             for parameter in ACTIONS_DEFAULT_KEYS :
@@ -704,6 +718,13 @@ def getKeyWords(processed_entry : Doc) -> dict :
             continue
         if match[0] > SIMILARITY_THRESHOLD :
             # if is considered a key word, is added to the dict
+            if match[1] == "entity" and match[0] != 1 :
+                continue
+            if (match[1] == "position" 
+            and match[1] == lastParameter[1] 
+            and processed_entry[index].lower_ == "from"
+            and processed_entry[lastParameter[0]].lower_ != "from") :
+                continue
             KEY_WORDS_ENTRY[index] = match[1] 
             if match[1] in PARAMETERS_DICT_KEYS :
                 lastParameter = (index,match[1])
@@ -727,7 +748,6 @@ def NL_to_OCLI(ocliFile : str) -> str :
     TAKEN_INDEXES.extend(KEY_WORDS_ENTRY.keys())
 
     dictEntities = {index : processed_entry[index].text for index,keyword in KEY_WORDS_ENTRY.items() if keyword == "entity"}
-    print("dictEntities :", dictEntities)
 
     dictioNameIndexes, dictEntities, TAKEN_INDEXES = name(processed_entry,
                                                             dictEntities,
@@ -754,6 +774,7 @@ def NL_to_OCLI(ocliFile : str) -> str :
     # if no entity :check the ocli file
     indexAction= [index for index,keyword in KEY_WORDS_ENTRY.items() if keyword in ACTIONS_DEFAULT_KEYS][0]
     finalRelations = findRelations(processed_entry, dictEntities, indexAction)
+    print("relations : ", finalRelations)
     indexMainSubject = findIndexMainSubject(processed_entry, KEY_WORDS_ENTRY, indexAction, INDEX_MAIN_ENTITY)  
 
     INDEXES_MAIN = {"subject" : indexMainSubject, 
@@ -775,7 +796,7 @@ def NL_to_OCLI(ocliFile : str) -> str :
         stringName = "".join([processed_entry[index].text for index in valueIndexes])
         if stringName[-1] in ["/","\\"] : stringName = stringName[:-1]
         dictioEntityNames[entityIndex] = stringName
-    print("dictioNameIndexes : ", dictioNameIndexes)
+    # print("dictioNameIndexes : ", dictioNameIndexes)
     print("dictioEntityNames : ",dictioEntityNames)
     print("dictEntities : ", dictEntities)
     
@@ -783,7 +804,7 @@ def NL_to_OCLI(ocliFile : str) -> str :
     print("association : ", association)
 
     fullName = buildFullName(dictioEntityNames, dictEntities, finalRelations, INDEX_MAIN_ENTITY, EXISTING_ENTITY_NAMES, KEY_WORDS_ENTRY[INDEXES_MAIN["action"]])
-    print(fullName)
+    print("fullname : ", fullName)
     if fullName == None:
         raise ValueError("Not all the parent tree is known to name the object.")
     
@@ -819,11 +840,11 @@ def NL_to_OCLI(ocliFile : str) -> str :
                 nextKeyWordIndex = len(processed_entry) if counter == len(allEntryItemsList)-1 else allEntryItemsList[counter+1][0]
                 # get the parameter value
                 parameterValue, parameterIndex = get.FUNCTIONS[parameterName](processed_entry, 
-                                                                          index, 
-                                                                          dictEntities[association[index][0]], 
-                                                                          lastKeyWordIndex, 
-                                                                          nextKeyWordIndex, 
-                                                                          TAKEN_INDEXES)
+                                                                            index, 
+                                                                            dictEntities[association[index][0]], 
+                                                                            lastKeyWordIndex, 
+                                                                            nextKeyWordIndex, 
+                                                                            TAKEN_INDEXES)
                 TAKEN_INDEXES.extend(parameterIndex)
                 dictioEntityParameters[parameterName] = parameterValue # store the value
 
@@ -877,7 +898,7 @@ def NL_to_OCLI(ocliFile : str) -> str :
 
             # get the parameter value
             parameterValue, parameterIndexes = findAssociatedValue(processed_entry, INDEXES_MAIN, TAKEN_INDEXES, parameterName, dictEntities[attachedEntityIndex])
-            print(parameterValue)
+            print("parameterValue : ", parameterValue)
             TAKEN_INDEXES.extend(parameterIndexes)
 
             fullName = buildFullName(dictioEntityNames, dictEntities, finalRelations, attachedEntityIndex, EXISTING_ENTITY_NAMES, KEY_WORDS_ENTRY[INDEXES_MAIN["action"]])

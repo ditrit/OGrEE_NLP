@@ -125,10 +125,7 @@ def template(processed_entry : Doc, index : int, attachedEntity : str, lastKeyWo
         resultValues, resultIndexes = findNameFirst(processed_entry, index)
 
     if not resultValues :
-        if attachedEntity and attachedEntity in wiki.DEFAULT_VALUE.keys() and "template" in wiki.DEFAULT_VALUE[attachedEntity].keys() :
-            return wiki.DEFAULT_VALUE[attachedEntity]["template"], resultIndexes
-        else :
-            return None, resultIndexes
+        return None, resultIndexes
     else :
         return resultValues, resultIndexes
 
@@ -154,10 +151,7 @@ def position(processed_entry : Doc, index : int, attachedEntity : str, lastKeyWo
                 positionList.append((foundValue[0], token.i))
 
     if not len(positionList) in LENGTH_CRITERIA :
-        if attachedEntity and attachedEntity in wiki.DEFAULT_VALUE.keys() and "position" in wiki.DEFAULT_VALUE[attachedEntity].keys() :
-            return wiki.DEFAULT_VALUE[attachedEntity]["position"], []
-        else :
-            return None, []
+        return None, []
 
     if attachedEntity and attachedEntity in wiki.DEFAULT_UNITS.keys() and "position" in wiki.DEFAULT_UNITS[attachedEntity].keys() :
         unitList = wiki.DEFAULT_UNITS[attachedEntity]["position"]
@@ -208,10 +202,7 @@ def rotation(processed_entry : Doc, index : int, attachedEntity : str, lastKeyWo
                 rotationList.append((foundValue[0], token.i))
 
     if len(rotationList) != LENGTH_CRITERIA :
-        if attachedEntity and attachedEntity in wiki.DEFAULT_VALUE.keys() and "rotation" in wiki.DEFAULT_VALUE[attachedEntity].keys() :
-            return wiki.DEFAULT_VALUE[attachedEntity]["rotation"], []
-        else :
-            return None, []
+        return None, []
     else :
         resultValues = [float(x[0]) for x in rotationList]
         resultIndexes = [x[1] for x in rotationList]
@@ -246,10 +237,7 @@ def size(processed_entry : Doc, index : int, attachedEntity : str, lastKeyWordIn
                 sizeList.append((foundValue[0], token.i))
 
     if len(sizeList) != LENGTH_CRITERIA :
-        if attachedEntity and attachedEntity in wiki.DEFAULT_VALUE.keys() and "size" in wiki.DEFAULT_VALUE[attachedEntity].keys() :
-            return wiki.DEFAULT_VALUE[attachedEntity]["size"], []
-        else :
-            return None, []
+        return None, []
     else :
         if attachedEntity and attachedEntity in wiki.DEFAULT_UNITS.keys() and "size" in wiki.DEFAULT_UNITS[attachedEntity].keys() :
             unitList = wiki.DEFAULT_UNITS[attachedEntity]["size"]
@@ -287,10 +275,7 @@ def axisOrientation(processed_entry : Doc, index : int, attachedEntity : str, la
                     resultIndexes.append(token.i)
 
     if len(axisX) not in [0,1] or len(axisY) not in [0,1] or len(axisX)+len(axisY) == 0 :
-        if attachedEntity and attachedEntity in wiki.DEFAULT_VALUE.keys() and "axisOrientation" in wiki.DEFAULT_VALUE[attachedEntity].keys() :
-            return wiki.DEFAULT_VALUE[attachedEntity]["axisOrientation"], resultIndexes
-        else :
-            return None, resultIndexes
+        return None, resultIndexes
     
     # if the value is not comprehensive
     resultValues = ""
@@ -325,10 +310,7 @@ def unit(processed_entry : Doc, index : int, attachedEntity : str, lastKeyWordIn
             resultIndexes.append(token.i)
 
     if len(resultValues) != 1 :
-        if attachedEntity and attachedEntity in wiki.DEFAULT_VALUE.keys() and "unit" in wiki.DEFAULT_VALUE[attachedEntity].keys() :
-            return wiki.DEFAULT_VALUE[attachedEntity]["unit"], resultIndexes
-        else :
-            return None, resultIndexes
+        return None, resultIndexes
     else :
         return resultValues[0], resultIndexes
     
@@ -384,10 +366,7 @@ def color(processed_entry : Doc, index : int, attachedEntity : str, lastKeyWordI
                     resultIndexes.append(token.i)
 
     if len(resultValues) != 1 : 
-        if attachedEntity and attachedEntity in wiki.DEFAULT_VALUE.keys() and "color" in wiki.DEFAULT_VALUE[attachedEntity].keys() :
-            return wiki.DEFAULT_VALUE[attachedEntity]["color"], resultIndexes
-        else :
-            return None, resultIndexes
+        return None, resultIndexes
     else : 
         return resultValues[0].replace(" ", ""), resultIndexes
     
