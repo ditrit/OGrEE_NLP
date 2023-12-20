@@ -1,7 +1,7 @@
 import re, json, sys
 from Room import Room
 from Rack import Rack
-from pulp import LpVariable, LpProblem, LpBinary
+from pulp import *
 
 ######################################## Methods to place an object next to a sibling ###################################################
 def get_line_coeff(p1,p2):
@@ -18,7 +18,7 @@ class Problem():
     def __init__(self,rack,room):
         self.rack=rack
         self.room=room
-        self.problem = LpProblem(name = "Positionning", sense='LpMinimize')
+        self.problem = LpProblem(name = "Positionning", sense=LpMinimize)
         if(self.room.vertices):
             self.upperBound = 1000000 * max([vertex[1] for vertex in self.room.vertices]) #arbitrary, just needs to be big enough
             self.x = LpVariable("x",lowBound = min([vertex[0] for vertex in self.room.vertices]),upBound = max([vertex[0] for vertex in self.room.vertices]))
@@ -134,6 +134,7 @@ class Problem():
         self.problem.setObjective(distx+disty)
     
     def showSolution(self):
+        self.problem.solve()
         """Prints the solution for x and y"""
         return self.x.value(), self.y.value()
 
