@@ -277,6 +277,30 @@ def getAllParametersSeparatorsPillarsInRoom(room : str, path : str) -> list:
         in_room.append((re.split(':',type_command)[1],list_param))
     return in_room
 
+def getAllParametersSeparatorsPillar(entity_name : str, path : str):
+    """This function will find all the parameters and the pillars or separator"""
+    commands = getAllSeparatorsPillars(path)
+    command = []
+    for command in commands:
+        command_name = re.split(r'@',re.split(r'=', command)[1])[0]
+        if command_name == entity_name:
+            #We found the right command
+            room, values = re.split(r'=',command)[0], re.split(r'=',command)[1]
+            command = re.split(r'@',values)
+            break
+    real_comm = []
+    for elem in command:
+        real_comm.append(transformStringParameters(elem))
+    if re.split(r':', room)[1] == "pillars+":
+        name = "Pillar"
+    elif re.split(r':', room)[1] == "separators+":
+        name = "Separator"
+    else:
+        raise Exception("Neither a Pillar or a Separator was given")
+    return name , real_comm
+                
+
+
 def findChangesObjects(path : str) -> list:
 
     list_selection = []
@@ -421,53 +445,60 @@ def calculatePositionObjectRoom(room : str, path : str, command_entry : tuple):
 def calculatePositionObjectRackCorri(entity_name : str, path : str, command_entry : tuple):
     """This function will calculate the position of the entity in command_entry whan the position depends on the room position"""
     #command_entry = entity, dict[right,left,...] = (value,unit)
-    pos = []
-    entity_param = getParametersFromName(entity_name,path)
+    pos = [0,0]
+    if getTypeFromName(path, entity_name) =="":
+        entity_param = getAllParametersSeparatorsPillar(entity_name,path)
+    else :
+        entity_param = getParametersFromName(entity_name,path)
     if len(command_entry) == 2 and type(command_entry[1]) == dict: #TO DO: check the format of entity
-        if command_entry[0] not in ["Separator","Device"] and entity_param[0] in ["Rack","Corridor"]:
+        if command_entry[0] not in ["Separator","Device"] and entity_param[0] in ["Rack","Corridor", "Pillar"]:
             #They both should have at least 5 parameters
-            if len(entity_param[1]) > 4 :
+            if len(entity_param[1]) > 4 and entity_param[0] in ["Rack","Corridor"]:
                 size_entity= entity_param[1][4] if type(entity_param[1][4]) == list else getParametersFromTemplate(entity_param[1][4])["size"]
-            rotation = entity_param[3] #TO DO : Convert rotation in number
+            else:
+                #If we are here, we are working with a pillar
+                size_entity = entity_param[1][2]
+            #The only angle which matter is the rotation compared with z
+            rotation = entity_param[1][3][2] if entity_param[0] != "Pillar" else entity_param[1][3]
             factor_change_vector_y = np.cos(rotation)
             factor_change_vector_x = np.sin(rotation)
-            
-            for key in command_entry[1].keys():
 
+            for key in command_entry[1].keys():
+                print("size etity", size_entity)
                 if key == "front": 
-                    floorUnit = entity_param[3] 
-                    valueX =   (size_entity[1] + command_entry[1]["front"][0])*factor_change_vector_x
+                    floorUnit = entity_param[1][2] 
+                    valueX =   - (size_entity[1] + command_entry[1]["front"][0])*factor_change_vector_x
                     valueY =  (size_entity[1] + command_entry[1]["front"][0])*factor_change_vector_y
                     pos[0] += convertUnity(valueX, floorUnit, command_entry[1]["front"][1])
                     pos[1] += convertUnity(valueY, floorUnit, command_entry[1]["front"][1])
                 elif key == "rear": 
-                    floorUnit = entity_param[3] 
-                    valueX =   -(size_entity[1]["rear"][0])*factor_change_vector_x
-                    valueY =  -(size_entity[1]["rear"][0])*factor_change_vector_y
+                    floorUnit = entity_param[1][2] 
+                    valueX =   -(command_entry[1]["rear"][0])*factor_change_vector_x
+                    valueY =  -(command_entry[1]["rear"][0])*factor_change_vector_y
                     pos[0] += convertUnity(valueX, floorUnit, command_entry[1]["rear"][1])
                     pos[1] += convertUnity(valueY, floorUnit, command_entry[1]["rear"][1])
                 
                 if key == "right": 
-                    floorUnit = entity_param[3] 
-                    valueX =   (size_entity[1]["right"][0] + size_entity[0])*factor_change_vector_x
-                    valueY =  -(size_entity[1]["right"][0] + size_entity[0])*factor_change_vector_y
+                    floorUnit = entity_param[1][2] 
+                    valueX =   (command_entry[1]["right"][0] + size_entity[0])*factor_change_vector_x
+                    valueY =  (command_entry[1]["right"][0] + size_entity[0])*factor_change_vector_y
                     pos[0] += convertUnity(valueX, floorUnit, command_entry[1]["right"][1])
                     pos[1] += convertUnity(valueY, floorUnit, command_entry[1]["right"][1])
                 elif key == "left": 
-                    floorUnit = entity_param[3] 
-                    valueX =   -(size_entity[1]["left"][0])*factor_change_vector_x
-                    valueY =  (size_entity[1]["left"][0])*factor_change_vector_y
+                    floorUnit = entity_param[1][2] 
+                    valueX =   -(command_entry[1]["left"][0])*factor_change_vector_x
+                    valueY =  -(command_entry[1]["left"][0])*factor_change_vector_y
                     pos[0] += convertUnity(valueX, floorUnit, command_entry[1]["left"][1])
                     pos[1] += convertUnity(valueY, floorUnit, command_entry[1]["left"][1])
                 
-                #If entity is a rack or a corridor, entity can also have a z
-                if command_entry[0] == 'Rack' or command_entry[1] == 'Corridor':
+                #If entity is a rack or a corridor, entity can also have a z and we can't place a rack on a pillar
+                if (command_entry[0] == 'Rack' or command_entry[1] == 'Corridor') and entity_param[0] != "Pillar":
                     #We can seek a z
                     if key == "top":
-                        floorUnit = entity_param[3]    
+                        floorUnit = entity_param[1][2]     
                         pos.append(convertUnity(size_entity[2] + command_entry[1]["top"][0], floorUnit, command_entry[1]["top"][1]))
                     elif key == "bottom" and size_entity[2] > command_entry[1]["bottom"][0] > 0: 
-                        floorUnit = entity_param[3]    
+                        floorUnit = entity_param[1][2]    
                         pos.append(convertUnity(size_entity[2], floorUnit, command_entry[1]["bottom"][1]))
             
         #A device only has posU as coordonate
@@ -512,8 +543,8 @@ if __name__ == "__main__":
     #print(objects)
     #for obj in objects:
      #    print(obj)
-    cmds = getParametersFromName('/P/BASIC/A/R1',path)
-    print(cmds)
+    # cmds = getParametersFromName('/P/BASIC/A/R1',path)
+    # print(cmds)
    # print(getAllElementParameters('/P/BASIC/A/R1',path))
     # room, list_object_Ocli = createListObject('/P/BASIC/A/R1',path)
     # print(list_object_Ocli)
@@ -528,10 +559,13 @@ if __name__ == "__main__":
     # print(listSeparatorPillarChanged('/P/BASIC/A/R1',path,getAllParametersSeparatorsPillarsInRoom("/P/BASIC/A/R1",path) ))
     # print(correctEntityParameters('/P/BASIC/A/R1',path, listSeparatorPillarChanged('/P/BASIC/A/R1',path,getAllParametersSeparatorsPillarsInRoom("/P/BASIC/A/R1",path) )))
     # # print(correctEntityParameters('/P/BASIC/A/R1',path,listeItemInRoomToChange('/P/BASIC/A/R1',path,objects_in('/P/BASIC/A/R1',path))))
-    
+    # print(getAllSeparatorsPillars(path))
+    # print(getAllParametersSeparatorsPillar('PILL1', path))
     dictio = {}
     dictio["left"] = (7,"m")
     dictio["top"] = (0.3,"cm")
     dictio["front"] = (2,"f")
     entity = "Rack"
-    print(calculatePositionObjectRoom('/P/BASIC/A/R1',path, (entity,dictio )))
+    # print(calculatePositionObjectRoom('/P/BASIC/A/R1',path, (entity,dictio )))
+    print(calculatePositionObjectRackCorri('/P/BASIC/A/R1/A01', path, (entity,dictio)))
+    print(calculatePositionObjectRackCorri('PILL1', path, (entity,dictio)))
