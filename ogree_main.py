@@ -48,18 +48,6 @@ PARAMETERS_DICT = {
             # "technical" : ["technical"]
             }
 
-DEFAULT_VALUE = {
-    "tenant" : {"color" : "#FFFFFF"},
-    "building" : {"position" : [0,0], "rotation" : 0},
-    "room" : {"position" : [0,0], "rotation" : 0, "axisOrientation" : "+x+y", "floorUnit" : "t"},
-    "rack" : {"position" : [0,0], "unit" : "t", "rotation" : [0,0,0]},
-    "device" : {"position" : 0, "size" : 0},
-    "corridor" : {"position" : [0,0], "rotation" : [0,0,0], "temperature" : "warm", "unit" : "t"},
-    "tag" : {"color" : "#FFFFFF"},
-    "separator" : {"type" : "wireframe"},
-    "pillar" : {"position" : [0,0], "rotation" : 0}
-}
-
 CORRECT_NAMES = {
     "unit" : {
         "room" : "floorUnit"
@@ -678,7 +666,7 @@ def getKeyWords(processed_entry : Doc) -> dict :
 
     KEY_WORDS_ENTRY = {}
     # we detect key words in the sentence given and put them into KEY_WORDS_ENTRY
-    lastParameter = None
+    lastParameter = None, None
     for index,token in enumerate(processed_entry) :
         matching_list = [] # list of tuples with the similarity score and type of key word (for each key word)
         if token.pos_ == "VERB" and str(token) == token.lemma_ and token.head == token : # 2nd test : if infinitive verb
@@ -702,15 +690,15 @@ def getKeyWords(processed_entry : Doc) -> dict :
         match = max(matching_list)
 
         # if "called" or a synonym is used for a parameter and not for an entity
-        if match[1] == "name" and (lastParameter == token.head or lastParameter in token.children) :
+        if match[1] == "name" and lastParameter[0] and (lastParameter[0] == token.head.i or processed_entry[lastParameter[0]] in token.children) :
             continue
-        if match[1] == lastParameter and match[1] not in ["name","position"] :
+        if match[1] == lastParameter[1] and match[1] not in ["name","position"] :
             continue
         if match[0] > SIMILARITY_THRESHOLD :
             # if is considered a key word, is added to the dict
             KEY_WORDS_ENTRY[index] = match[1] 
             if match[1] in PARAMETERS_DICT_KEYS :
-                lastParameter = match[1]
+                lastParameter = (index,match[1])
 
     return KEY_WORDS_ENTRY
 
@@ -791,25 +779,37 @@ def NL_to_OCLI(ocliFile : str) -> str :
     if fullName == None:
         raise ValueError("Not all the parent tree is known to name the object.")
     
-    # TODO : change the name of parameters depending on the entity (e.g. unit -> floorUnit)
-    if INDEXES_MAIN["subject"] in KEY_WORDS_ENTRY.keys() and KEY_WORDS_ENTRY[INDEXES_MAIN["subject"]] == "entity" :
+    if (INDEXES_MAIN["subject"] in KEY_WORDS_ENTRY.keys() 
+        and INDEXES_MAIN["subject"] == INDEXES_MAIN["entity"]) :
         # we do the processes related to each parameter
 
         if KEY_WORDS_ENTRY[INDEXES_MAIN["action"]] == "ACTION_POSITIVE" :
             if fullName in EXISTING_ENTITY_NAMES.keys():
                 raise ValueError(f'This {dictEntities[INDEXES_MAIN["subject"]]} already exists.')
-            dictioEntityParameters = wiki.makeDictParam(processed_entry[INDEXES_MAIN["subject"]].text)
+            
+            dictioEntityParameters = {}
+            listGivenParameters = []
+            for index,(entityIndex, parameterName) in association.items() :
+                if entityIndex == INDEXES_MAIN["subject"] :
+                    listGivenParameters.append(parameterName)
+            isGivenTemplate = "template" in listGivenParameters
+            if dictEntities[INDEXES_MAIN["subject"]] == "device" :
+                dictioEntityParameters = wiki.makeDictParam(dictEntities[INDEXES_MAIN["subject"]], isGivenTemplate, listGivenParameters)
+            else :
+                dictioEntityParameters = wiki.makeDictParam(dictEntities[INDEXES_MAIN["subject"]], isGivenTemplate)
+
             dictioEntityParameters["name"] = fullName.upper()
             allEntryItemsList = list(KEY_WORDS_ENTRY.items())
+
             for counter,(index,parameterName) in enumerate(allEntryItemsList) :
                 if ((not parameterName in PARAMETERS_DICT_KEYS) 
-                    or bool(dictioEntityParameters[parameterName]) == True 
+                    or parameterName not in dictioEntityParameters.keys()
+                    or dictioEntityParameters[parameterName]
                     or association[index][0] != INDEXES_MAIN["subject"]) :
                     continue
                 lastKeyWordIndex = 0 if counter == 0 else allEntryItemsList[counter-1][0]
                 nextKeyWordIndex = len(processed_entry) if counter == len(allEntryItemsList)-1 else allEntryItemsList[counter+1][0]
                 # get the parameter value
-                # TODO : change to the get file
                 parameterValue, parameterIndex = get.FUNCTIONS[parameterName](processed_entry, 
                                                                           index, 
                                                                           dictEntities[association[index][0]], 
@@ -818,6 +818,10 @@ def NL_to_OCLI(ocliFile : str) -> str :
                                                                           TAKEN_INDEXES)
                 TAKEN_INDEXES.extend(parameterIndex)
                 dictioEntityParameters[parameterName] = parameterValue # store the value
+
+            for parameterName, value in dictioEntityParameters.items() :
+                if value == None and dictEntities[INDEXES_MAIN["entity"]] in wiki.DEFAULT_VALUE.keys() and parameterName in wiki.DEFAULT_VALUE[dictEntities[INDEXES_MAIN["entity"]]] :
+                    dictioEntityParameters[parameterName] = wiki.DEFAULT_VALUE[dictEntities[INDEXES_MAIN["entity"]]][parameterName]
             
             print("dictioEntityParameters : ", dictioEntityParameters)
             FINAL_INSTRUCTION = tools.create(dictEntities[INDEXES_MAIN["subject"]], dictioEntityParameters)

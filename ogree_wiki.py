@@ -26,7 +26,7 @@ PARAMETERS_NAME = {
                                 "optional" : ["size","template"]
                                 },
                 "room" : {  "mandatory" : ["name","position","rotation"], 
-                            "optional" : ["size", "axisOrientation", "floorUnit"]
+                            "optional" : ["size", "axisOrientation", "floorUnit","template"]
                             },
                 "rack" : {  "mandatory" : ["name", "position", "unit","rotation"],
                             "optional" : ["size","template"]
@@ -71,6 +71,44 @@ COLORS_HEX_BASIC = {
     'cyan': '#00FFFF',
     'gray': '#808080',
     'grey': '#808080'
+}
+
+DEFAULT_UNITS = {
+    "building" : {
+        "position" : ["m","m"],
+        "size" : ["m","m","m"]
+    },
+    "room" : {
+        "position" : ["m","m"],
+        "size" : ["m","m","m"]
+    },
+    "rack" : {
+        "position" : ["t","t","cm"],
+        "size" : ["cm","cm","u"]
+    },
+    "corridor" : {
+        "position" : ["t","t","cm"],
+        "size" : ["cm","cm","cm"]
+    },
+    "separator" : {
+        "position" : ["m","m"]
+    },
+    "pillar" : {
+        "position" : ["m","m"],
+        "size" : ["m","m"]
+    }
+}
+
+DEFAULT_VALUE = {
+    "tenant" : {"color" : "#FFFFFF"},
+    "building" : {"position" : [0,0], "rotation" : 0},
+    "room" : {"position" : [0,0], "rotation" : 0, "axisOrientation" : "+x+y", "floorUnit" : "t"},
+    "rack" : {"position" : [0,0], "unit" : "t", "rotation" : [0,0,0]},
+    "device" : {"position" : 0, "size" : 0},
+    "corridor" : {"position" : [0,0], "rotation" : [0,0,0], "temperature" : "warm", "unit" : "t"},
+    "tag" : {"color" : "#FFFFFF"},
+    "separator" : {"type" : "wireframe"},
+    "pillar" : {"position" : [0,0], "rotation" : 0}
 }
 
 PARAMETERS_FORMAT = {
@@ -277,10 +315,31 @@ PARAMETERS_FORMAT = {
 }           
                 
 
-def makeDictParam(entity : str) -> dict :
+def makeDictParam(entity : str, isGivenTemplate : bool = False, deviceGivenParameters : list = []) -> dict :
     dictio = {}
-    for parameter in listAllParameter(entity) :
+    for parameter in PARAMETERS_NAME[entity]["mandatory"] :
         dictio[parameter] = None
+
+    if entity == "device" :
+        if "slot" in deviceGivenParameters :
+            dictio["slot"] = None
+        else :
+            dictio["position"] = None
+        if "template" in deviceGivenParameters :
+            dictio["template"] = None
+            if "side" in deviceGivenParameters :
+                dictio["side"] = None
+        else :
+            dictio["size"] = None
+
+    else :
+        if isGivenTemplate :
+            dictio["template"] = None
+        else : 
+            for parameter in PARAMETERS_NAME[entity]["optional"] :
+                if parameter != "template" :
+                    dictio[parameter] = None
+
     return dictio
 
 def listAllParameter(element : str) :

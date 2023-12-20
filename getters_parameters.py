@@ -4,23 +4,38 @@ nlp = spacy.load("en_core_web_lg")
 from typing import Optional
 import re
 import ogree_wiki as wiki
-
-# TODO : récupération d'unités
+import importlib
+importlib.reload(wiki)
 
 FUNCTIONS = globals()
 
-def convertToUnit(value, unit) :
+def convertToUnit(processed_entry : Doc, index : int, value, finalUnit : str) :
     FACTORS = {
         'km': 1000,
         'm': 1,
         'dm': 0.1,
         'cm': 0.01,
-        'mm': 0.001
+        'mm': 0.001,
+        "t" : 1/0.6
     }
-    if unit and unit in FACTORS.keys() :
-        return float(value)*FACTORS[unit]
+    currentUnit = None
+    for unit in FACTORS.keys() :
+        match = re.findall(f"{value}[ ]*{unit}", processed_entry[index].text)
+        if match :
+            currentUnit = unit
+            break
+    
+    if not currentUnit and index+1 < len(processed_entry) :
+        for unit in FACTORS.keys() :
+            match = re.findall(f"^{unit}$", processed_entry[index+1].text.strip())
+            if match :
+                currentUnit = unit
+                break
+    
+    if currentUnit and finalUnit and finalUnit in FACTORS.keys() :
+        return float(value)*(1/FACTORS[currentUnit])*FACTORS[finalUnit]
     else :
-        return value
+        return float(value)
 
 def template(processed_entry : Doc, index : int, attachedEntity : str, lastKeyWordIndex : int, nextKeyWordIndex : int, forbiddenIndexes : list = []) :
     next_words = [token for token in processed_entry[index+1:nextKeyWordIndex] if token.i not in forbiddenIndexes]
@@ -109,8 +124,11 @@ def template(processed_entry : Doc, index : int, attachedEntity : str, lastKeyWo
     else :
         resultValues, resultIndexes = findNameFirst(processed_entry, index)
 
-    if not resultValues : 
-        raise Exception("No template value detected")
+    if not resultValues :
+        if attachedEntity and attachedEntity in wiki.DEFAULT_VALUE.keys() and "template" in wiki.DEFAULT_VALUE[attachedEntity].keys() :
+            return wiki.DEFAULT_VALUE[attachedEntity]["template"], resultIndexes
+        else :
+            return None, resultIndexes
     else :
         return resultValues, resultIndexes
 
@@ -126,7 +144,7 @@ def position(processed_entry : Doc, index : int, attachedEntity : str, lastKeyWo
     positionList = []
     for token in next_words :
         foundValue = re.findall("^[-]*\d+[.]*\d*", token.text)
-        if foundValue :  
+        if foundValue : 
             positionList.append((foundValue[0], token.i))
     if not len(positionList) in LENGTH_CRITERIA : # if none found in next words
         positionList = []
@@ -136,9 +154,16 @@ def position(processed_entry : Doc, index : int, attachedEntity : str, lastKeyWo
                 positionList.append((foundValue[0], token.i))
 
     if not len(positionList) in LENGTH_CRITERIA :
-        raise Exception("No position value detected")
+        if attachedEntity and attachedEntity in wiki.DEFAULT_VALUE.keys() and "position" in wiki.DEFAULT_VALUE[attachedEntity].keys() :
+            return wiki.DEFAULT_VALUE[attachedEntity]["position"], []
+        else :
+            return None, []
 
-    resultValues = [float(x[0]) for x in positionList]
+    if attachedEntity and attachedEntity in wiki.DEFAULT_UNITS.keys() and "position" in wiki.DEFAULT_UNITS[attachedEntity].keys() :
+        unitList = wiki.DEFAULT_UNITS[attachedEntity]["position"]
+        resultValues = [convertToUnit(processed_entry, x[1], x[0], unitList[index]) for (index,x) in enumerate(positionList)]
+    else :
+        resultValues = [float(x[0]) for x in positionList]
     if attachedEntity == "device" :
         resultValues = int(resultValues[0])
     resultIndexes = [x[1] for x in positionList]
@@ -183,7 +208,10 @@ def rotation(processed_entry : Doc, index : int, attachedEntity : str, lastKeyWo
                 rotationList.append((foundValue[0], token.i))
 
     if len(rotationList) != LENGTH_CRITERIA :
-        raise Exception("No rotation value detected")
+        if attachedEntity and attachedEntity in wiki.DEFAULT_VALUE.keys() and "rotation" in wiki.DEFAULT_VALUE[attachedEntity].keys() :
+            return wiki.DEFAULT_VALUE[attachedEntity]["rotation"], []
+        else :
+            return None, []
     else :
         resultValues = [float(x[0]) for x in rotationList]
         resultIndexes = [x[1] for x in rotationList]
@@ -218,9 +246,16 @@ def size(processed_entry : Doc, index : int, attachedEntity : str, lastKeyWordIn
                 sizeList.append((foundValue[0], token.i))
 
     if len(sizeList) != LENGTH_CRITERIA :
-        raise Exception("No size value detected")
+        if attachedEntity and attachedEntity in wiki.DEFAULT_VALUE.keys() and "size" in wiki.DEFAULT_VALUE[attachedEntity].keys() :
+            return wiki.DEFAULT_VALUE[attachedEntity]["size"], []
+        else :
+            return None, []
     else :
-        resultValues = [float(x[0]) for x in sizeList]
+        if attachedEntity and attachedEntity in wiki.DEFAULT_UNITS.keys() and "size" in wiki.DEFAULT_UNITS[attachedEntity].keys() :
+            unitList = wiki.DEFAULT_UNITS[attachedEntity]["size"]
+            resultValues = [convertToUnit(processed_entry, x[1], x[0], unitList[index]) for (index,x) in enumerate(sizeList)]
+        else :
+            resultValues = [float(x[0]) for x in sizeList]
         resultIndexes = [x[1] for x in sizeList]
         if attachedEntity == "device" :
             resultValues = resultValues[0]
@@ -252,7 +287,10 @@ def axisOrientation(processed_entry : Doc, index : int, attachedEntity : str, la
                     resultIndexes.append(token.i)
 
     if len(axisX) not in [0,1] or len(axisY) not in [0,1] or len(axisX)+len(axisY) == 0 :
-        raise Exception("No axisOrientation value detected")
+        if attachedEntity and attachedEntity in wiki.DEFAULT_VALUE.keys() and "axisOrientation" in wiki.DEFAULT_VALUE[attachedEntity].keys() :
+            return wiki.DEFAULT_VALUE[attachedEntity]["axisOrientation"], resultIndexes
+        else :
+            return None, resultIndexes
     
     # if the value is not comprehensive
     resultValues = ""
@@ -287,7 +325,10 @@ def unit(processed_entry : Doc, index : int, attachedEntity : str, lastKeyWordIn
             resultIndexes.append(token.i)
 
     if len(resultValues) != 1 :
-        raise Exception("No unit value detected")
+        if attachedEntity and attachedEntity in wiki.DEFAULT_VALUE.keys() and "unit" in wiki.DEFAULT_VALUE[attachedEntity].keys() :
+            return wiki.DEFAULT_VALUE[attachedEntity]["unit"], resultIndexes
+        else :
+            return None, resultIndexes
     else :
         return resultValues[0], resultIndexes
     
@@ -311,7 +352,7 @@ def findKeyWord(processed_entry : Doc,
             break
 
     if len(resultValues) != 1 :
-        return None,None
+        return None,[]
     else :
         return resultValues[0], resultIndexes
     
@@ -343,7 +384,10 @@ def color(processed_entry : Doc, index : int, attachedEntity : str, lastKeyWordI
                     resultIndexes.append(token.i)
 
     if len(resultValues) != 1 : 
-        raise Exception("Not color value detected")
+        if attachedEntity and attachedEntity in wiki.DEFAULT_VALUE.keys() and "color" in wiki.DEFAULT_VALUE[attachedEntity].keys() :
+            return wiki.DEFAULT_VALUE[attachedEntity]["color"], resultIndexes
+        else :
+            return None, resultIndexes
     else : 
         return resultValues[0].replace(" ", ""), resultIndexes
     
