@@ -9,6 +9,7 @@ from tools import nbOccurences, terrorist, transformStringParameters, convertUni
 from Rack import *
 from Room import *
 from Corridor import *
+import numpy as np 
 
 def createRoomFromTemplate(name :str, position : list, rotation : int, filename : str) -> str:
     """Creates a Room instance from a json file with a template"""
@@ -409,16 +410,84 @@ def calculatePositionObjectRoom(room : str, path : str, command_entry : tuple):
         
         #A device only has posU as coordonate
         elif  command_entry[0] == "Device":
-            if key == "top" and size_room[2] - command_entry[1]["top"][0] > 0:
-                            floorUnit = room_param[5] if len(room_param[1]) > 6 else "t"        
-                            pos.append(convertUnity(size_room[2] - command_entry[1]["top"][0], floorUnit, command_entry[1]["top"][1]))
-            elif key == "bottom" and size_room[2] > command_entry[1]["bottom"][0] > 0: 
-                            floorUnit = room_param[5] if len(room_param[1]) > 6 else "t"        
-                            pos.append(convertUnity(command_entry[1]["bottom"][0], floorUnit, command_entry[1]["bottom"][1]))
+            if key == "top" and size_room[2] - command_entry[1]["top"][0] > 0:     
+                            pos.append(size_room[2] - command_entry[1]["top"][0])
+            elif key == "bottom" and size_room[2] > command_entry[1]["bottom"][0] > 0:      
+                            pos.append(command_entry[1]["bottom"][0])
         return pos
     else:
         raise Exception("commmand_entry format false or the entity is a separator")
 
+def calculatePositionObjectRackCorri(entity_name : str, path : str, command_entry : tuple):
+    """This function will calculate the position of the entity in command_entry whan the position depends on the room position"""
+    #command_entry = entity, dict[right,left,...] = (value,unit)
+    pos = []
+    entity_param = getParametersFromName(entity_name,path)
+    if len(command_entry) == 2 and type(command_entry[1]) == dict: #TO DO: check the format of entity
+        if command_entry[0] not in ["Separator","Device"] and entity_param[0] in ["Rack","Corridor"]:
+            #They both should have at least 5 parameters
+            if len(entity_param[1]) > 4 :
+                size_entity= entity_param[1][4] if type(entity_param[1][4]) == list else getParametersFromTemplate(entity_param[1][4])["size"]
+            rotation = entity_param[3] #TO DO : Convert rotation in number
+            factor_change_vector_y = np.cos(rotation)
+            factor_change_vector_x = np.sin(rotation)
+            
+            for key in command_entry[1].keys():
+
+                if key == "front": 
+                    floorUnit = entity_param[3] 
+                    valueX =   (size_entity[1] + command_entry[1]["front"][0])*factor_change_vector_x
+                    valueY =  (size_entity[1] + command_entry[1]["front"][0])*factor_change_vector_y
+                    pos[0] += convertUnity(valueX, floorUnit, command_entry[1]["front"][1])
+                    pos[1] += convertUnity(valueY, floorUnit, command_entry[1]["front"][1])
+                elif key == "rear": 
+                    floorUnit = entity_param[3] 
+                    valueX =   -(size_entity[1]["rear"][0])*factor_change_vector_x
+                    valueY =  -(size_entity[1]["rear"][0])*factor_change_vector_y
+                    pos[0] += convertUnity(valueX, floorUnit, command_entry[1]["rear"][1])
+                    pos[1] += convertUnity(valueY, floorUnit, command_entry[1]["rear"][1])
+                
+                if key == "right": 
+                    floorUnit = entity_param[3] 
+                    valueX =   (size_entity[1]["right"][0] + size_entity[0])*factor_change_vector_x
+                    valueY =  -(size_entity[1]["right"][0] + size_entity[0])*factor_change_vector_y
+                    pos[0] += convertUnity(valueX, floorUnit, command_entry[1]["right"][1])
+                    pos[1] += convertUnity(valueY, floorUnit, command_entry[1]["right"][1])
+                elif key == "left": 
+                    floorUnit = entity_param[3] 
+                    valueX =   -(size_entity[1]["left"][0])*factor_change_vector_x
+                    valueY =  (size_entity[1]["left"][0])*factor_change_vector_y
+                    pos[0] += convertUnity(valueX, floorUnit, command_entry[1]["left"][1])
+                    pos[1] += convertUnity(valueY, floorUnit, command_entry[1]["left"][1])
+                
+                #If entity is a rack or a corridor, entity can also have a z
+                if command_entry[0] == 'Rack' or command_entry[1] == 'Corridor':
+                    #We can seek a z
+                    if key == "top":
+                        floorUnit = entity_param[3]    
+                        pos.append(convertUnity(size_entity[2] + command_entry[1]["top"][0], floorUnit, command_entry[1]["top"][1]))
+                    elif key == "bottom" and size_entity[2] > command_entry[1]["bottom"][0] > 0: 
+                        floorUnit = entity_param[3]    
+                        pos.append(convertUnity(size_entity[2], floorUnit, command_entry[1]["bottom"][1]))
+            
+        #A device only has posU as coordonate
+        elif  command_entry[0] == "Device":
+            if key == "top":
+                            pos.append(size_entity[2] + command_entry[1]["top"][0])
+            elif key == "bottom": 
+                            pos.append(size_entity[2])
+        
+    #TO DO : finish last case
+        # elif entity_param[0] == "Device" and command_entry[0] =="Device":
+            
+        #     if key == "top":  
+        #                 pos.append((size_entity[2] - command_entry[1]["top"][0], floorUnit, command_entry[1]["top"][1]))
+        #     elif key == "bottom" and size_entity[2] > command_entry[1]["bottom"][0] > 0:  
+        #                 pos.append(convertUnity(command_entry[1]["bottom"][0], floorUnit, command_entry[1]["bottom"][1]))
+
+        return pos
+    else:
+        raise Exception("commmand_entry format false or the entity is a separator")
 
 TYPES = {"+ro" : "Room", "+si" : "Site", "+bd" : "Building", "+room" : "Room", "+site" : "Site", "+building" : "Building", "+rk" : "Rack", "+rack" : "Rack",
  "+gr" : "Group", "+corridor" : "Corridor", "+co" : "Corridor", "pillars+" : "Pillar", "separators+" : "Separator" }    
