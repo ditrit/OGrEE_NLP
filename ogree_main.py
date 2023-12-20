@@ -700,7 +700,7 @@ def NL_to_OCLI(ocliFile : str) -> str :
                              dictEntities,
                              dictioNameIndexes,
                              [index for index,parameter in KEY_WORDS_ENTRY.items() if parameter == "name"],
-                             FORBIDDEN_INDEX,
+                             TAKEN_INDEXES,
                              INDEXES_MAIN,
                              EXISTING_ENTITY_NAMES,
                              False)
