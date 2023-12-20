@@ -114,35 +114,62 @@ def template(processed_entry : Doc, index : int, attachedEntity : str, lastKeyWo
     else :
         return resultValues, resultIndexes
 
+def findPositionAndOrientation(sentence: str):
+    list_param = []
+    position = re.findall(r'[0-9]+', sentence)
+    orientation = re.findall(r'left|right|rear|front|top|bottom', sentence)
+    if len(position) == len(orientation):
+        for i in range(len(position)):
+            list_param.append((position[i],orientation[i]))
+    else:
+        raise Exception("A value couldn't be associated with an orientation")
+    return list_param
+
+
 # TODO : manage width etc
 def position(processed_entry : Doc, index : int, attachedEntity : str, lastKeyWordIndex : int, nextKeyWordIndex : int, forbiddenIndexes : list = []) :
     next_words = [token for token in processed_entry[index+1:nextKeyWordIndex] if token.i not in forbiddenIndexes]
+    str_tabl = [str(word) for word in next_words]
     previous_words = [token for token in processed_entry[lastKeyWordIndex+1:index] if token.i not in forbiddenIndexes]
+    if processed_entry[index].lower_ != "from" and "from" not in str_tabl:
+        LENGTH_CRITERIA = [2] 
+        if attachedEntity == "device"  : LENGTH_CRITERIA = [1]
+        if attachedEntity in ["rack", "corridor"] : LENGTH_CRITERIA.append(3)
 
-    LENGTH_CRITERIA = [2] 
-    if attachedEntity == "device"  : LENGTH_CRITERIA = [1]
-    if attachedEntity in ["rack", "corridor"] : LENGTH_CRITERIA.append(3)
-
-    positionList = []
-    for token in next_words :
-        foundValue = re.findall("^[-]*\d+[.]*\d*", token.text)
-        if foundValue :  
-            positionList.append((foundValue[0], token.i))
-    if not len(positionList) in LENGTH_CRITERIA : # if none found in next words
         positionList = []
-        for token in previous_words :
+        for token in next_words :
             foundValue = re.findall("^[-]*\d+[.]*\d*", token.text)
             if foundValue :  
                 positionList.append((foundValue[0], token.i))
+        if not len(positionList) in LENGTH_CRITERIA : # if none found in next words
+            positionList = []
+            for token in previous_words :
+                foundValue = re.findall("^[-]*\d+[.]*\d*", token.text)
+                if foundValue :  
+                    positionList.append((foundValue[0], token.i))
 
-    if not len(positionList) in LENGTH_CRITERIA :
-        raise Exception("No position value detected")
+        if not len(positionList) in LENGTH_CRITERIA :
+            raise Exception("No position value detected")
 
-    resultValues = [float(x[0]) for x in positionList]
-    if attachedEntity == "device" :
-        resultValues = int(resultValues[0])
-    resultIndexes = [x[1] for x in positionList]
-    return resultValues, resultIndexes
+        resultValues = [float(x[0]) for x in positionList]
+        if attachedEntity == "device" :
+            resultValues = int(resultValues[0])
+        resultIndexes = [x[1] for x in positionList]
+        return resultValues, resultIndexes
+    else:
+        #The value between the at and the from is the value to memorize
+        if processed_entry[index].lower_ == "from":
+            ensemble_words = [token for token in processed_entry[lastKeyWordIndex+1:nextKeyWordIndex] if token.i not in forbiddenIndexes]
+        else:
+            ensemble_words = [token for token in processed_entry[1:nextKeyWordIndex] if token.i not in forbiddenIndexes]
+        list_values = findPositionAndOrientation(str(ensemble_words))
+        dict_value = {}
+        for elem in list_values:
+            if len(elem) ==2:
+                dict_value[elem[1]] = elem[0]
+            else:
+                raise Exception("A direction is not associatied with a value")
+        return dict_value
 
 
 def rotation(processed_entry : Doc, index : int, attachedEntity : str, lastKeyWordIndex : int, nextKeyWordIndex : int, forbiddenIndexes : list = []) :
@@ -371,6 +398,16 @@ def type(processed_entry : Doc, index : int, attachedEntity : str, lastKeyWordIn
         return processed_entry[index].lower_, [index]
     else :
         return findKeyWord(processed_entry, index, attachedEntity, lastKeyWordIndex, nextKeyWordIndex, forbiddenIndexes, typeKeyWords)
+
+
+def fromValue(processed_entry : Doc, index : int, attachedEntity : str, lastKeyWordIndex : int, nextKeyWordIndex : int, forbiddenIndexes : list = []) :
+
+    def cutInHalf(processed_entry : Doc):
+        """This function will cut the sentence after a from and return a list a cut sentences"""
+        list_sentence = []
+        cut_sentence = re.split(r'and', processed_entry)
+        return list_sentence
+
 
 
 # def slot() :

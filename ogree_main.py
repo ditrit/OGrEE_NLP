@@ -43,7 +43,7 @@ PARAMETERS_DICT = {
             "color" : ["color","usableColor","reservedColor","technicalColor"] + list(wiki.COLORS_HEX_BASIC.keys()), 
             "side" : ["side"],
             "temperature" : ["temperature","cold","warm"],
-            "type" : ["type","wall","wireframe","plain"],
+            "type" : ["type","wireframe","plain"],
             # "reserved" : ["reserved"],
             # "technical" : ["technical"]
             }
