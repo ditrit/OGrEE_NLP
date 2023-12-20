@@ -634,13 +634,16 @@ def buildFullName(dictioEntityNames : dict, dictEntities : dict, finalRelations 
                 # If a hole has been detected previously and a parent has been detected, such a name with a hole is searched
                 if holeGluer != None:
                     for existingName in EXISTING_ENTITY_NAMES.keys():
-                        partialSplit = partialName.split("/")
-                        beginningPartialName = ""
-                        for splitted in partialSplit[:-1]:
-                            beginningPartialName += "/" + splitted
-                        correspondingName = re.findall(f"{holeGluer}/[-/\w]+{beginningPartialName}$", existingName)
+                        # partialSplit = partialName.split("/")
+                        # beginningPartialName = ""
+                        # for splitted in partialSplit[:-1]:
+                        #     beginningPartialName += "/" + splitted
+                        # correspondingName = re.findall(f"{holeGluer}/[-/\w]+{beginningPartialName}$", existingName)
+                        correspondingName = re.findall(f"{holeGluer}/[-/\w]+{partialName}$", existingName)
                         if EXISTING_ENTITY_NAMES[existingName] == dictEntities[entityIndex] and len(correspondingName) > 0:
-                            return existingName + partialName
+                            # return existingName + partialName
+                            return existingName
+                    print(holeGluer + " + " + partialName)
                     raise ValueError("One of the parent name is incorrect or not all the parent tree is known to name the object.")
                 # Search for existing entity with the same partial name
                 for existingName in EXISTING_ENTITY_NAMES.keys():
@@ -799,6 +802,9 @@ def NL_to_OCLI(ocliFile : str) -> str :
     # print("dictioNameIndexes : ", dictioNameIndexes)
     print("dictioEntityNames : ",dictioEntityNames)
     print("dictEntities : ", dictEntities)
+
+    if not INDEXES_MAIN["entity"] in dictioEntityNames.keys():
+        dictioEntityNames[INDEXES_MAIN["entity"]] = scrapping.createDefaultName(dictEntities[INDEXES_MAIN["entity"]], EXISTING_ENTITY_NAMES)
     
     association = associateParameters(processed_entry, KEY_WORDS_ENTRY, dictEntities, dictioEntityNames)
     print("association : ", association)
