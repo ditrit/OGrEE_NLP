@@ -171,18 +171,47 @@ def correctorSpellingMistakes(text : str) -> str:
         string+= str(word) + " "
     return string
 
-#endregion
+def convertPrefix(value : float, unit : str) -> float:
+    #Return this unit in the international unit system
+    if len(unit) == 1:
+        return value
+    prefix = unit[0]
+    match prefix:
+        case "m":
+            return value/1000
+        case "c":
+            return value/100 
+        case "d":
+            return value/10
+        case _:
+            raise Exception("Unit not reconised")
 
+def convertUnity(valueChanged : int, unityD : str, unityChanged : str) -> float:
+    if unityD[len(unityD)-1] == unityChanged[len(unityChanged)-1]:
+        #They are in the same unity
+        return convertPrefix(valueChanged, unityD)
+    else:
+        if unityD[len(unityD)-1] == 'm' and unityChanged[len(unityChanged)-1] == 'f':
+            return convertPrefix(convertPrefix(valueChanged, unityChanged)/3.281,unityD)
+        elif unityD[len(unityD)-1] == 'f' and unityChanged[len(unityChanged)-1] == 'm':
+            return convertPrefix(convertPrefix(valueChanged, unityChanged)*3.281,unityD)
+        else:
+            #Don't know how to convert the tilde
+            return valueChanged
+
+
+#endregion
 
 CONFORMITY_CHECK = {"name" : isNameConform, "orientation" : isOrientationConform, "position" : isPositionConform,
                     "rotation" : isRotationConform, "size" : isSizeConform, "axisOrientation" : isAxisOrientationConform,
                     "floorUnit" : isFloorUnitConform, "color" : isColorConform}
 
 if __name__ == "__main__":
+    print(convertUnity(10,"f", "cm"))
 #     print(create("site",{"name" : "P/BASIC", "orientation":"WSW"}))
 #     print(setAttribute("P/BASIC","position","WSW"))
 
-    print(correctorSpellingMistakes("I em curently tetsing Textblog [5412,1254,4521] 9 FUCKER"))
-    print(correctorSpellingMistakes("Plase at the psitio [0,10,20] the rack caleleed R1"))
+    # print(correctorSpellingMistakes("I em curently tetsing Textblog [5412,1254,4521] 9 FUCKER"))
+    # print(correctorSpellingMistakes("Plase at the psitio [0,10,20] the rack caleleed R1"))
 
 
