@@ -731,6 +731,8 @@ def NL_to_OCLI(ocliFile : str) -> str :
     TAKEN_INDEXES.extend(KEY_WORDS_ENTRY.keys())
 
     dictEntities = {index : processed_entry[index].text for index,keyword in KEY_WORDS_ENTRY.items() if keyword == "entity"}
+    print("dictEntities :", dictEntities)
+
     dictioNameIndexes, dictEntities, TAKEN_INDEXES = name(processed_entry,
                                                             dictEntities,
                                                             {},
