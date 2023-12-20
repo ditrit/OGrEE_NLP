@@ -716,11 +716,11 @@ def NL_to_OCLI(ocliFile : str) -> str :
     dictEntities = {index : processed_entry[index].text for index,keyword in KEY_WORDS_ENTRY.items() if keyword == "entity"}
     print("dictEntities :", dictEntities)
 
-    dictioNameIndexes, dictEntities, FORBIDDEN_INDEX = name(processed_entry,
+    dictioNameIndexes, dictEntities, TAKEN_INDEXES = name(processed_entry,
                                                             dictEntities,
                                                             {},
                                                             [index for index,parameter in KEY_WORDS_ENTRY.items() if parameter == "name"],
-                                                            FORBIDDEN_INDEX,
+                                                            TAKEN_INDEXES,
                                                             {},
                                                             EXISTING_ENTITY_NAMES,
                                                             True)
@@ -750,11 +750,11 @@ def NL_to_OCLI(ocliFile : str) -> str :
                     "entity" : INDEX_MAIN_ENTITY}
     print("INDEXES_MAIN : ", INDEXES_MAIN)
 
-    dictioNameIndexes, dictEntities, FORBIDDEN_INDEX = name(processed_entry,
+    dictioNameIndexes, dictEntities, TAKEN_INDEXES = name(processed_entry,
                                                             dictEntities,
                                                             dictioNameIndexes,
                                                             [index for index,parameter in KEY_WORDS_ENTRY.items() if parameter == "name"],
-                                                            FORBIDDEN_INDEX,
+                                                            TAKEN_INDEXES,
                                                             INDEXES_MAIN,
                                                             EXISTING_ENTITY_NAMES,
                                                             False)
@@ -773,6 +773,7 @@ def NL_to_OCLI(ocliFile : str) -> str :
         value, indexes = findAssociatedValue(processed_entry, INDEX_ACTION, INDEX_MAIN_SUBJECT, TAKEN_INDEXES)
     
     association = associateParameters(processed_entry, KEY_WORDS_ENTRY, dictEntities, dictioEntityNames)
+    print("association :", association)
 
     fullName = buildFullName(dictioEntityNames, dictEntities, finalRelations, INDEX_MAIN_ENTITY, EXISTING_ENTITY_NAMES, KEY_WORDS_ENTRY[INDEX_ACTION])
     print(fullName)
@@ -800,7 +801,7 @@ def NL_to_OCLI(ocliFile : str) -> str :
                 # TODO : change to the get file
                 parameterValue, parameterIndex = get.FUNCTIONS[parameter](processed_entry, 
                                                                           index, 
-                                                                          processed_entry[association[index][0]].lower_, 
+                                                                          dictEntities[association[index][0]], 
                                                                           lastKeyWordIndex, 
                                                                           nextKeyWordIndex, 
                                                                           TAKEN_INDEXES)
@@ -828,7 +829,7 @@ def NL_to_OCLI(ocliFile : str) -> str :
                 # get the parameter value
                 parameterValue, parameterIndex = get.FUNCTIONS[parameter](processed_entry,
                                                                           index, 
-                                                                          processed_entry[association[index][0]].lower_, 
+                                                                          dictEntities[association[index][0]], 
                                                                           lastKeyWordIndex, 
                                                                           nextKeyWordIndex, 
                                                                           TAKEN_INDEXES)
@@ -851,7 +852,7 @@ def NL_to_OCLI(ocliFile : str) -> str :
                 # get the parameter value
                 parameterValue, parameterIndex = get.FUNCTIONS[parameter](processed_entry, 
                                                                           index, 
-                                                                          processed_entry[association[index][0]].lower_, 
+                                                                          dictEntities[association[index][0]], 
                                                                           lastKeyWordIndex, 
                                                                           nextKeyWordIndex, 
                                                                           TAKEN_INDEXES)
@@ -859,7 +860,7 @@ def NL_to_OCLI(ocliFile : str) -> str :
                 fullName = buildFullName(dictioEntityNames, dictEntities, finalRelations, association[index][0], EXISTING_ENTITY_NAMES, KEY_WORDS_ENTRY[INDEX_ACTION])
                 if fullName == None:
                     raise ValueError("Not all the parent tree is known to name the object.")
-                FINAL_INSTRUCTION += tools.setAttribute(fullName, parameter, parameterValue, processed_entry[association[index][0]].lower_) + "\n"
+                FINAL_INSTRUCTION += tools.setAttribute(fullName, parameter, parameterValue, dictEntities[association[index][0]]) + "\n"
         
         else:
             raise NotImplementedError("The action '"+KEY_WORDS_ENTRY[INDEX_ACTION]+"' has not been implemented for '"+KEY_WORDS_ENTRY[INDEX_MAIN_SUBJECT]+"' as main subject")
