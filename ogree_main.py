@@ -136,11 +136,10 @@ def findAssociatedValue(processed_entry : Doc, INDEXES_MAIN : dict, TAKEN_INDEXE
     result = searchAssociatedKeyWordRecursive(processed_entry, INDEXES_MAIN["action"])
     if result :
         startIndexForSearch = result[0][0]
-
-    if startIndexForSearch == None :
-        raise Exception("Value not detected")
+    else :
+        startIndexForSearch = INDEXES_MAIN["subject"]
     
-    if parameter and attachedEntity :
+    if parameter and parameter != "name" and attachedEntity :
         return get.FUNCTIONS[parameter](processed_entry, startIndexForSearch, attachedEntity, startIndexForSearch, len(processed_entry), TAKEN_INDEXES)
     
     else :
@@ -152,10 +151,11 @@ def findAssociatedValue(processed_entry : Doc, INDEXES_MAIN : dict, TAKEN_INDEXE
             if counter == 1 : continue
             if token.text == "," : continue
             tokenRealIndex = list(processed_entry).index(token)
+            if tokenRealIndex in TAKEN_INDEXES : continue
             value.append(token.text)
             indexes.append(tokenRealIndex)
         for index,text in enumerate(value) :
-            if re.search("[0-9]+", text) :
+            if re.search("^\d+$", text) :
                 if int(text) == float(text) :
                     value[index] = int(text)
                 else :
@@ -188,7 +188,7 @@ def findIndexMainEntity(processed_entry : Doc, dictEntities : dict, indexAction 
             return [originIndex for originIndex,currentIndex in currentIndexes.items() if currentIndex == indexAction][0]
         counter += 1
 
-    if counter == 3 :
+    if counter == 5 :
         raise Exception("Main entity not found")
     
     if list(currentIndexes.values()).count(indexAction) != 1 :
@@ -322,7 +322,7 @@ def name(processed_entry : Doc,
                 break
             if token.i in dictioEntities.keys() and token.i not in newDictioNameIndexes.keys() :
                 return token.i
-            if token.i == indexesMain["action"] :
+            if indexesMain and "action" in indexesMain.keys() and token.i == indexesMain["action"] and "entity" in indexesMain.keys():
                 return indexesMain["entity"]
             counter += 1
         return None
@@ -494,14 +494,11 @@ def associateParameters(processed_entry : Doc, KEY_WORDS_ENTRY : dict, dictEntit
     return association
 
 def slashInName(parentName : str, partialName : str, EXISTING_ENTITY_NAMES : dict, dictEntities : dict, entityIndex : int):
-    if parentName[0] == "/":
-        if parentName[-1] == "/":
-            parentName = parentName[:-1]
-    else:
-        if parentName[-1] == "/":
-            parentName = "/" + parentName[:-1]
-        else:
-            parentName = "/" + parentName
+    if parentName[0] != "/":
+        parentName = "/" + parentName
+    if parentName[-1] == "/":
+        parentName = parentName[:-1]
+            
     # ici commence l'enfer
     knownEntity = 0
     knownDevice = 0
@@ -624,9 +621,13 @@ def buildFullName(dictioEntityNames : dict, dictEntities : dict, finalRelations 
                 # If a hole has been detected previously and a parent has been detected, such a name with a hole is searched
                 if holeGluer != None:
                     for existingName in EXISTING_ENTITY_NAMES.keys():
-                        correspondingName = re.findall(f"{holeGluer}/[-/\w]+{partialName}$", existingName)
+                        partialSplit = partialName.split("/")
+                        beginningPartialName = ""
+                        for splitted in partialSplit[:-1]:
+                            beginningPartialName += "/" + splitted
+                        correspondingName = re.findall(f"{holeGluer}/[-/\w]+{beginningPartialName}$", existingName)
                         if EXISTING_ENTITY_NAMES[existingName] == dictEntities[entityIndex] and len(correspondingName) > 0:
-                            return existingName
+                            return existingName + partialName
                     raise ValueError("One of the parent name is incorrect or not all the parent tree is known to name the object.")
                 # Search for existing entity with the same partial name
                 for existingName in EXISTING_ENTITY_NAMES.keys():
@@ -635,6 +636,9 @@ def buildFullName(dictioEntityNames : dict, dictEntities : dict, finalRelations 
                 # Extreme emergency : assuming that specified entity and MAIN_ENTITY have the same parental tree
                 if temporaryIndex != None:
                     parentalTreeIndexList.append(temporaryIndex)
+                for existingName in EXISTING_ENTITY_NAMES.keys():
+                    if EXISTING_ENTITY_NAMES[existingName] == list(wiki.ENTITIES.keys())[level]:
+                        return existingName + partialName
                 # Informations are incomplete
                 else:
                     raise ValueError("Not all the parent tree is known to name the object.")
@@ -655,6 +659,9 @@ def buildFullName(dictioEntityNames : dict, dictEntities : dict, finalRelations 
             for existingName in EXISTING_ENTITY_NAMES.keys():
                 if len(existingName) >= len(partialName) and partialName == existingName[-len(partialName):]:
                     return existingName
+        for existingName in EXISTING_ENTITY_NAMES.keys():
+            if EXISTING_ENTITY_NAMES[existingName] == "site":
+                return existingName + partialName
 
     # TODO : adapt hierarchyPosition
 
@@ -869,13 +876,26 @@ def NL_to_OCLI(ocliFile : str) -> str :
 
             # get the parameter value
             parameterValue, parameterIndexes = findAssociatedValue(processed_entry, INDEXES_MAIN, TAKEN_INDEXES, parameterName, dictEntities[attachedEntityIndex])
+            print(parameterValue)
             TAKEN_INDEXES.extend(parameterIndexes)
 
             fullName = buildFullName(dictioEntityNames, dictEntities, finalRelations, attachedEntityIndex, EXISTING_ENTITY_NAMES, KEY_WORDS_ENTRY[INDEXES_MAIN["action"]])
             if fullName == None:
                 raise ValueError("Not all the parent tree is known to name the object.")
             if INDEXES_MAIN["subject"] not in KEY_WORDS_ENTRY.keys() : parameterName = processed_entry[INDEXES_MAIN["subject"]]
-            FINAL_INSTRUCTION += tools.setAttribute(fullName, parameterName, parameterValue, dictEntities[attachedEntityIndex]) + "\n"
+            if INDEXES_MAIN["subject"] in KEY_WORDS_ENTRY.keys() and KEY_WORDS_ENTRY[INDEXES_MAIN["subject"]] == "name":
+                currentNameSplit = fullName.split("/")[1:]
+                if parameterValue[0] != "/":
+                    parameterValue = "/" + parameterValue
+                if parameterValue[-1] == "/":
+                    parameterValue = parameterValue[:-1]
+                newName = ""
+                for i in range(len(currentNameSplit) - parameterValue.count("/")):
+                    newName += "/" + currentNameSplit[i]
+                newName += parameterValue
+                FINAL_INSTRUCTION += tools.setName(fullName, newName)
+            else:
+                FINAL_INSTRUCTION += tools.setAttribute(fullName, parameterName, parameterValue, dictEntities[attachedEntityIndex]) + "\n"
     
         else:
             raise NotImplementedError("The action '"+KEY_WORDS_ENTRY[INDEXES_MAIN["action"]]+"' has not been implemented for '"+KEY_WORDS_ENTRY[INDEXES_MAIN["subject"]]+"' as main subject")
