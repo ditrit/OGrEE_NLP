@@ -2,6 +2,7 @@ import re, json, sys
 from Room import Room
 from Rack import Rack
 from pulp import *
+from math import *
 
 ######################################## Methods to place an object next to a sibling ###################################################
 def get_line_coeff(p1,p2):
@@ -34,7 +35,7 @@ class Problem():
             ,LpVariable("y"+str(i),lowBound = self.room.position[1]-max(self.room.size),upBound = self.room.position[1]+max(self.room.size)))
             for i in range(1,5)]
 
-    def set_vertices():
+    def set_vertices(self):
         L, l = self.rack.getFloorDimensions()
         alpha = self.rack.rotation[2]
         cFr, cRe, cLe, cRi = self.rack.clearance[0], self.rack.clearance[1], self.rack.clearance[2], self.rack.clearance[3]
