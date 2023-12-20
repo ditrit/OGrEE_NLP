@@ -644,6 +644,9 @@ def buildFullName(dictioEntityNames : dict, dictEntities : dict, finalRelations 
                 # Extreme emergency : assuming that specified entity and MAIN_ENTITY have the same parental tree
                 if temporaryIndex != None:
                     parentalTreeIndexList.append(temporaryIndex)
+                for existingName in EXISTING_ENTITY_NAMES.keys():
+                    if EXISTING_ENTITY_NAMES[existingName] == list(wiki.ENTITIES.keys())[level]:
+                        return existingName + partialName
                 # Informations are incomplete
                 else:
                     raise ValueError("Not all the parent tree is known to name the object.")
@@ -664,6 +667,9 @@ def buildFullName(dictioEntityNames : dict, dictEntities : dict, finalRelations 
             for existingName in EXISTING_ENTITY_NAMES.keys():
                 if len(existingName) >= len(partialName) and partialName == existingName[-len(partialName):]:
                     return existingName
+        for existingName in EXISTING_ENTITY_NAMES.keys():
+            if EXISTING_ENTITY_NAMES[existingName] == "site":
+                return existingName + partialName
 
     # TODO : adapt hierarchyPosition
 
