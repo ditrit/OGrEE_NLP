@@ -130,6 +130,8 @@ class Rack(Component):
             return self.size[0],self.size[2]
         elif(self.rotation == "left" or self.rotation == "right"):
             return self.size[1],self.size[2]
+        else :
+            return self.size[0],self.size[1]
             
     def possible_next_to(self):
         positions = []
