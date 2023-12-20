@@ -662,6 +662,7 @@ def buildFullName(dictioEntityNames : dict, dictEntities : dict, finalRelations 
         for existingName in EXISTING_ENTITY_NAMES.keys():
             if EXISTING_ENTITY_NAMES[existingName] == "site":
                 return existingName + partialName
+        raise ValueError("No site available")
 
     # TODO : adapt hierarchyPosition
 
