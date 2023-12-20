@@ -71,7 +71,7 @@ class Rack(Component):
         right_rear =  [x0 + cos(alpha)*(L + cRi) - sin(alpha)*(l + cFr), y0 + cos(alpha)*(l + cFr) + sin(alpha)*(L + cRi)]
         left_front =  [x0 - cos(alpha)*cLe - sin(alpha)*(l + cFr),       y0 + cos(alpha)*(l + cFr) - sin(alpha)*cLe]
         left_rear =   [x0 - cos(alpha)*cLe + sin(alpha)*cRe,             y0 - cos(alpha)*cRe - sin(alpha)*cLe]
-        return [right_front,right_rear,left_front,left_rear]
+        return [left_rear,right_front,right_rear,left_front]
     
     def isConform(self):
         boolean = super().isConform()     

@@ -36,9 +36,9 @@ class Room(Component) :
         else :
             return [
                 (self.position[0],self.position[1]),
-                (self.position[0]+self.size[0]*cos(self.rotation),self.position[0]+self.size[1]*sin(self.rotation)),
+                (self.position[0]-self.size[1]*sin(self.rotation),self.position[1]+self.size[1]*cos(self.rotation)),
                 (self.position[0]+self.size[0]*cos(self.rotation)-self.size[1]*sin(self.rotation),self.position[1]+self.size[0]*sin(self.rotation)+self.size[1]*cos(self.rotation)),
-                (self.position[0]-self.size[1]*sin(self.rotation),self.position[1]+self.size[1]*cos(self.rotation))                
+                (self.position[0]+self.size[0]*cos(self.rotation),self.position[0]+self.size[1]*sin(self.rotation))            
             ]
 
     def set_vertices_from_template(template):
