@@ -37,7 +37,7 @@ def isConform(parameters : dict, entity="") -> bool:
     functions, which are called if the parameter is in the parameters"""
     if (CONFORMITY_CHECK == {}):
         raise NotImplementedError("There are no implemented conformity checks")
-    return all([CONFORMITY_CHECK[attribute](parameters[attribute],entity="") for attribute in parameters.keys()])
+    return all([CONFORMITY_CHECK[attribute](parameters[attribute],entity) for attribute in parameters.keys()])
 
 #region:Tests
 def isListOfNumbers(lst : list) -> bool:
