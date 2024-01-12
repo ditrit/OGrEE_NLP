@@ -4,38 +4,23 @@ nlp = spacy.load("en_core_web_lg")
 from typing import Optional
 import re
 import ogree_wiki as wiki
-import importlib
-importlib.reload(wiki)
+
+# TODO : récupération d'unités
 
 FUNCTIONS = globals()
 
-def convertToUnit(processed_entry : Doc, index : int, value, finalUnit : str) :
+def convertToUnit(value, unit) :
     FACTORS = {
         'km': 1000,
         'm': 1,
         'dm': 0.1,
         'cm': 0.01,
-        'mm': 0.001,
-        "t" : 1/0.6
+        'mm': 0.001
     }
-    currentUnit = None
-    for unit in FACTORS.keys() :
-        match = re.findall(f"{value}[ ]*{unit}", processed_entry[index].text)
-        if match :
-            currentUnit = unit
-            break
-    
-    if not currentUnit and index+1 < len(processed_entry) :
-        for unit in FACTORS.keys() :
-            match = re.findall(f"^{unit}$", processed_entry[index+1].text.strip())
-            if match :
-                currentUnit = unit
-                break
-    
-    if currentUnit and finalUnit and finalUnit in FACTORS.keys() :
-        return float(value)*(1/FACTORS[currentUnit])*FACTORS[finalUnit]
+    if unit and unit in FACTORS.keys() :
+        return float(value)*FACTORS[unit]
     else :
-        return float(value)
+        return value
 
 def template(processed_entry : Doc, index : int, attachedEntity : str, lastKeyWordIndex : int, nextKeyWordIndex : int, forbiddenIndexes : list = []) :
     next_words = [token for token in processed_entry[index+1:nextKeyWordIndex] if token.i not in forbiddenIndexes]
@@ -124,44 +109,67 @@ def template(processed_entry : Doc, index : int, attachedEntity : str, lastKeyWo
     else :
         resultValues, resultIndexes = findNameFirst(processed_entry, index)
 
-    if not resultValues :
-        return None, resultIndexes
+    if not resultValues : 
+        raise Exception("No template value detected")
     else :
         return resultValues, resultIndexes
+
+def findPositionAndOrientation(sentence: str):
+    list_param = []
+    position = re.findall(r'[0-9]+', sentence)
+    orientation = re.findall(r'left|right|rear|front|top|bottom', sentence)
+    if len(position) == len(orientation):
+        for i in range(len(position)):
+            list_param.append((position[i],orientation[i]))
+    else:
+        raise Exception("A value couldn't be associated with an orientation")
+    return list_param
+
 
 # TODO : manage width etc
 def position(processed_entry : Doc, index : int, attachedEntity : str, lastKeyWordIndex : int, nextKeyWordIndex : int, forbiddenIndexes : list = []) :
     next_words = [token for token in processed_entry[index+1:nextKeyWordIndex] if token.i not in forbiddenIndexes]
+    str_tabl = [str(word) for word in next_words]
     previous_words = [token for token in processed_entry[lastKeyWordIndex+1:index] if token.i not in forbiddenIndexes]
+    if processed_entry[index].lower_ != "from" and "from" not in str_tabl:
+        LENGTH_CRITERIA = [2] 
+        if attachedEntity == "device"  : LENGTH_CRITERIA = [1]
+        if attachedEntity in ["rack", "corridor"] : LENGTH_CRITERIA.append(3)
 
-    LENGTH_CRITERIA = [2] 
-    if attachedEntity == "device"  : LENGTH_CRITERIA = [1]
-    if attachedEntity in ["rack", "corridor"] : LENGTH_CRITERIA.append(3)
-
-    positionList = []
-    for token in next_words :
-        foundValue = re.findall("^[-]*\d+[.]*\d*", token.text)
-        if foundValue : 
-            positionList.append((foundValue[0], token.i))
-    if not len(positionList) in LENGTH_CRITERIA : # if none found in next words
         positionList = []
-        for token in previous_words :
+        for token in next_words :
             foundValue = re.findall("^[-]*\d+[.]*\d*", token.text)
             if foundValue :  
                 positionList.append((foundValue[0], token.i))
+        if not len(positionList) in LENGTH_CRITERIA : # if none found in next words
+            positionList = []
+            for token in previous_words :
+                foundValue = re.findall("^[-]*\d+[.]*\d*", token.text)
+                if foundValue :  
+                    positionList.append((foundValue[0], token.i))
 
-    if not len(positionList) in LENGTH_CRITERIA :
-        return None, []
+        if not len(positionList) in LENGTH_CRITERIA :
+            raise Exception("No position value detected")
 
-    if attachedEntity and attachedEntity in wiki.DEFAULT_UNITS.keys() and "position" in wiki.DEFAULT_UNITS[attachedEntity].keys() :
-        unitList = wiki.DEFAULT_UNITS[attachedEntity]["position"]
-        resultValues = [convertToUnit(processed_entry, x[1], x[0], unitList[index]) for (index,x) in enumerate(positionList)]
-    else :
         resultValues = [float(x[0]) for x in positionList]
-    if attachedEntity == "device" :
-        resultValues = int(resultValues[0])
-    resultIndexes = [x[1] for x in positionList]
-    return resultValues, resultIndexes
+        if attachedEntity == "device" :
+            resultValues = int(resultValues[0])
+        resultIndexes = [x[1] for x in positionList]
+        return resultValues, resultIndexes
+    else:
+        #The value between the at and the from is the value to memorize
+        if processed_entry[index].lower_ == "from":
+            ensemble_words = [token for token in processed_entry[lastKeyWordIndex+1:nextKeyWordIndex] if token.i not in forbiddenIndexes]
+        else:
+            ensemble_words = [token for token in processed_entry[1:nextKeyWordIndex] if token.i not in forbiddenIndexes]
+        list_values = findPositionAndOrientation(str(ensemble_words))
+        dict_value = {}
+        for elem in list_values:
+            if len(elem) ==2:
+                dict_value[elem[1]] = elem[0]
+            else:
+                raise Exception("A direction is not associatied with a value")
+        return dict_value
 
 
 def rotation(processed_entry : Doc, index : int, attachedEntity : str, lastKeyWordIndex : int, nextKeyWordIndex : int, forbiddenIndexes : list = []) :
@@ -202,7 +210,7 @@ def rotation(processed_entry : Doc, index : int, attachedEntity : str, lastKeyWo
                 rotationList.append((foundValue[0], token.i))
 
     if len(rotationList) != LENGTH_CRITERIA :
-        return None, []
+        raise Exception("No rotation value detected")
     else :
         resultValues = [float(x[0]) for x in rotationList]
         resultIndexes = [x[1] for x in rotationList]
@@ -237,13 +245,9 @@ def size(processed_entry : Doc, index : int, attachedEntity : str, lastKeyWordIn
                 sizeList.append((foundValue[0], token.i))
 
     if len(sizeList) != LENGTH_CRITERIA :
-        return None, []
+        raise Exception("No size value detected")
     else :
-        if attachedEntity and attachedEntity in wiki.DEFAULT_UNITS.keys() and "size" in wiki.DEFAULT_UNITS[attachedEntity].keys() :
-            unitList = wiki.DEFAULT_UNITS[attachedEntity]["size"]
-            resultValues = [convertToUnit(processed_entry, x[1], x[0], unitList[index]) for (index,x) in enumerate(sizeList)]
-        else :
-            resultValues = [float(x[0]) for x in sizeList]
+        resultValues = [float(x[0]) for x in sizeList]
         resultIndexes = [x[1] for x in sizeList]
         if attachedEntity == "device" :
             resultValues = resultValues[0]
@@ -275,7 +279,7 @@ def axisOrientation(processed_entry : Doc, index : int, attachedEntity : str, la
                     resultIndexes.append(token.i)
 
     if len(axisX) not in [0,1] or len(axisY) not in [0,1] or len(axisX)+len(axisY) == 0 :
-        return None, resultIndexes
+        raise Exception("No axisOrientation value detected")
     
     # if the value is not comprehensive
     resultValues = ""
@@ -310,7 +314,7 @@ def unit(processed_entry : Doc, index : int, attachedEntity : str, lastKeyWordIn
             resultIndexes.append(token.i)
 
     if len(resultValues) != 1 :
-        return None, resultIndexes
+        raise Exception("No unit value detected")
     else :
         return resultValues[0], resultIndexes
     
@@ -334,7 +338,7 @@ def findKeyWord(processed_entry : Doc,
             break
 
     if len(resultValues) != 1 :
-        return None,[]
+        return None,None
     else :
         return resultValues[0], resultIndexes
     
@@ -366,7 +370,7 @@ def color(processed_entry : Doc, index : int, attachedEntity : str, lastKeyWordI
                     resultIndexes.append(token.i)
 
     if len(resultValues) != 1 : 
-        return None, resultIndexes
+        raise Exception("Not color value detected")
     else : 
         return resultValues[0].replace(" ", ""), resultIndexes
     
@@ -394,6 +398,16 @@ def type(processed_entry : Doc, index : int, attachedEntity : str, lastKeyWordIn
         return processed_entry[index].lower_, [index]
     else :
         return findKeyWord(processed_entry, index, attachedEntity, lastKeyWordIndex, nextKeyWordIndex, forbiddenIndexes, typeKeyWords)
+
+
+def fromValue(processed_entry : Doc, index : int, attachedEntity : str, lastKeyWordIndex : int, nextKeyWordIndex : int, forbiddenIndexes : list = []) :
+
+    def cutInHalf(processed_entry : Doc):
+        """This function will cut the sentence after a from and return a list a cut sentences"""
+        list_sentence = []
+        cut_sentence = re.split(r'and', processed_entry)
+        return list_sentence
+
 
 
 # def slot() :
