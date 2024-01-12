@@ -1,0 +1,28 @@
+{
+ "name"       : "Scheider NS1000N",
+ "slug"       : "schneider-ns1000n",
+ "vendor"     : "Schneider",
+ "model"      : "ComPact NS1000N - disjoncteur - 3P3D - 50KA - Micrologic 2.0 - fixe prise avant",
+ "type"       : "disjoncteur",
+ "role"       : "child",
+ "orientation": "horizontal",      
+ "side"       : "",
+ "sizeWDHmm"  : [w ,d ,h],
+ "documentation" : "https://www.se.com/fr/fr/product/33472/compact-ns1000n-disjoncteur-3p3d-50ka-micrologic-2-0-fixe-prise-avant"
+ "attributes" : {
+   "category" : "disjoncteur",
+    "phase"   : 3,
+    "internsité" : "50kA"
+    "etat" : "ouvert" / "ferme"
+ }
+ "components" : [
+  { "location": "L1",  ... }, 
+  { "location": "L2", ... },
+  { "location": "L3",... }
+ ],
+"in" : [
+ ... 
+],
+ "out": []
+ ... 
+}

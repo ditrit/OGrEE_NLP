@@ -18,22 +18,20 @@ import scrapping
 import getters_parameters as get
 import initialization as init
 
+### THE MAIN WORDS TO BE DETECTED AS AN ACTION ###
 ACTIONS_DEFAULT = {
-                    "ACTION_POSITIVE" : ["make","build","put","place","add","insert"],
+                    "ACTION_POSITIVE" : ["make","build","put","place","add","insert","pack"],
                     "ACTION_NEGATIVE" : ["remove", "delete"], 
                     "ALTERATION" : ["modify", "change","move","set","rename","rotate"]
                     }
 
-ACTIONS_CLI = {
-                "ACTION_POSITIVE" : "+",
-                "ACTION_NEGATIVE" : "-"
-                }
-
+### THE VALUE FROM WHICH WE CONSIDER TWO WORDS ARE SYNONYM ###
 SIMILARITY_THRESHOLD = 0.5
 
+### KEY WORDS FOR EACH PARAMETER ###
 PARAMETERS_DICT = {
             "name" : ["name","called"],
-            "position" : ["position","at","located","posU","centered","centerXY","startPosition","startPos","endPosition",],
+            "position" : ["position","at","located","posU","centered","centerXY","startPosition","startPos","endPosition"],
             "rotation" : ["rotation","turned","degree"],
             "size" : ["size","dimensions","height","sizeU","sizeXY"],
             "template" : ["template"],
@@ -48,51 +46,43 @@ PARAMETERS_DICT = {
             # "technical" : ["technical"]
             }
 
-DEFAULT_VALUE = {
-    "tenant" : {"color" : "#FFFFFF"},
-    "building" : {"position" : [0,0], "rotation" : 0},
-    "room" : {"position" : [0,0], "rotation" : 0, "axisOrientation" : "+x+y", "floorUnit" : "t"},
-    "rack" : {"position" : [0,0], "unit" : "t", "rotation" : [0,0,0]},
-    "device" : {"position" : 0, "size" : 0},
-    "corridor" : {"position" : [0,0], "rotation" : [0,0,0], "temperature" : "warm", "unit" : "t"},
-    "tag" : {"color" : "#FFFFFF"},
-    "separator" : {"type" : "wireframe"},
-    "pillar" : {"position" : [0,0], "rotation" : 0}
-}
-
-CORRECT_NAMES = {
-    "unit" : {
-        "room" : "floorUnit"
-    }
-}
-
 ENTITIES_FULL_NAME = {"entity" : list(wiki.ENTITIES.keys())}
 
-KEY_WORDS_ALL = {**ENTITIES_FULL_NAME,  **PARAMETERS_DICT}
+KEY_WORDS_ALL = {**ENTITIES_FULL_NAME,  **PARAMETERS_DICT} # ALL KEYWORDS TO BE DETECTED
 
 PARAMETERS_DICT_KEYS = PARAMETERS_DICT.keys()
 ACTIONS_DEFAULT_KEYS = ACTIONS_DEFAULT.keys()
 
+'''
+This function returns the main subject of the entry, that means the entity/parameter related to the action
+The identification is based on the action
+'''
 def findIndexMainSubject(processed_entry : Doc, dictioIndexKeyWords : dict, indexAction : int, indexMainEntity : int = None) -> int :
 
+    # This function searches the subject in the token's children (if exist) while a candidate subject has not been found
     def searchSubjectRecursive(processed_entry : Doc, currentIndex : int, testConformity, level : int = 0) -> (list|None):
-        if level == 5 :
+        if level == 5 : # if the research is too far from the original token, we stop
             return None
-        if testConformity(processed_entry[currentIndex]) :
+        if testConformity(processed_entry[currentIndex]) : 
+            # If token can be the main subject, we return it
             return [(currentIndex, level)]
         else:
+            # Else, we go through each of its children
             childList = []
             for child in processed_entry[currentIndex].children :
                 childResult = searchSubjectRecursive(processed_entry, child.i, testConformity, level+1)
                 if childResult != None :
                     childList.extend(childResult)
-            if bool(childList) == True : # if the list is not empty    
-                minValue = min(childList, key=lambda x: x[1])[1]
-                return [x for x in childList if x[1] == minValue] 
+            if bool(childList) == True : 
+                # If among all children there are candidates, we select the ones closer to the original token (according to level)    
+                minLevel = min(childList, key=lambda x: x[1])[1]
+                return [x for x in childList if x[1] == minLevel] 
+            # because the children function returns token in ascending order, the final childList is sorted so
             return childList
     
     def testConformity(token : Token) -> bool :
-        if ((token.i in dictioIndexKeyWords.keys() or token.pos_ == "NOUN") 
+        # This test is quite general, as the main subject could be almost anything
+        if ((token.i in dictioIndexKeyWords.keys() or token.pos_ == "NOUN") # if not in the key words, should be a newly defined parameter
             and token.pos_ != "VERB"
             and not token.is_upper) :
             return True
@@ -101,7 +91,7 @@ def findIndexMainSubject(processed_entry : Doc, dictioIndexKeyWords : dict, inde
     actionType = dictioIndexKeyWords[indexAction]
 
     result = searchSubjectRecursive(processed_entry, indexAction, testConformity)
-    result = [x[0] for x in result]
+    result = [x[0] for x in result] # remove the level for each value, as all values have the same level
     resultLength = len(result)
 
     if resultLength == 0 :
@@ -110,28 +100,35 @@ def findIndexMainSubject(processed_entry : Doc, dictioIndexKeyWords : dict, inde
         return result[0]
     else : # if there are at least two tokens at the same length from the action
 
-        if actionType == "ALTERATION" : # if alteration, prioritize known parameters
-            resultOnlyParameters = [index for index in result if index in dictioIndexKeyWords.keys() and dictioIndexKeyWords[index] in PARAMETERS_DICT.keys()]
+        if actionType == list(PARAMETERS_DICT_KEYS)[3] : # if "ALTERATION", prioritize known parameters over other parameters and entities e.g.
+            resultOnlyParameters = [index for index in result if index in dictioIndexKeyWords.keys() and dictioIndexKeyWords[index] in PARAMETERS_DICT_KEYS]
             if bool(resultOnlyParameters) :
                 return resultOnlyParameters[0]
             else :
-                return result[0]
+                # we return the closest to the action verb (see searchSubjectRecursive)
+                return result[0] 
             
-        else : # prioritize entities
+        else : # if the request is not an alteration, we prioritze entites
             resultOnlyEntity = [index for index in result if index in dictioIndexKeyWords.keys() and dictioIndexKeyWords[index] == "entity"]
             if not bool(resultOnlyEntity) :
                 return result[0]
             elif len(resultOnlyEntity) == resultLength and indexMainEntity in result :
+                # if all candidates are entities, we return the main entity identified earlier
                 return indexMainEntity
             else :
                 return resultOnlyEntity[0]
 
+'''
+This function finds the related value to the main subject when the action is "ALTERATION"
+'''
 def findAssociatedValue(processed_entry : Doc, INDEXES_MAIN : dict, TAKEN_INDEXES : list = [], parameter : str = None, attachedEntity : str = None) :
 
+    # Same as searchSubjectRecursive -> look above
     def searchAssociatedKeyWordRecursive(processed_entry : Doc, currentIndex : int, level : int = 0) -> (list|None) :
-        if level == 3 :
+        if level == 3 : # the max level is lower, because Spacy use to recognize well the links with the word "to"
             return None
-        if processed_entry[currentIndex].lower_ == "to" :
+        if processed_entry[currentIndex].lower_ == "to" : 
+            # the only difference is the test : here we look for the keyword "to"
             return [(currentIndex, level)]
         else:
             childList = []
@@ -139,22 +136,24 @@ def findAssociatedValue(processed_entry : Doc, INDEXES_MAIN : dict, TAKEN_INDEXE
                 childResult = searchAssociatedKeyWordRecursive(processed_entry, child.i, level+1)
                 if childResult != None :
                     childList.extend(childResult)
-            if bool(childList) == True : # if the list is not empty    
+            if bool(childList) == True :  
                 minValue = min(childList, key=lambda x: x[1])[1]
                 return [x for x in childList if x[1] == minValue] 
             return childList
     
     startIndexForSearch = None
+    # we look for the keyword "to" related to the verb marking the reference to the new value (e.g. set the value of... to...)
     result = searchAssociatedKeyWordRecursive(processed_entry, INDEXES_MAIN["action"])
-    if result :
+    if result : # if "to" is detected, we start our value research from this token
         startIndexForSearch = result[0][0]
-    else :
+    else : # if not, we look for a value close to the main subject (e.g. set the value 0 for...)
         startIndexForSearch = INDEXES_MAIN["subject"]
     
+    # if the value seeked is related to a "classic" parameter, we use the adapted search function
     if parameter and parameter != "name" and attachedEntity :
         return get.FUNCTIONS[parameter](processed_entry, startIndexForSearch, attachedEntity, startIndexForSearch, len(processed_entry), TAKEN_INDEXES)
     
-    else :
+    else : # else, we search into the subtree of the start token, and we assume the dependencies are correct
         counter = 0
         value = []
         indexes = []
@@ -162,12 +161,12 @@ def findAssociatedValue(processed_entry : Doc, INDEXES_MAIN : dict, TAKEN_INDEXE
             counter += 1
             if counter == 1 : continue
             if token.text == "," : continue
-            tokenRealIndex = list(processed_entry).index(token)
+            tokenRealIndex = list(processed_entry).index(token) # the subtree changes the indexes
             if tokenRealIndex in TAKEN_INDEXES : continue
             value.append(token.text)
             indexes.append(tokenRealIndex)
         for index,text in enumerate(value) :
-            if re.search("^\d+$", text) :
+            if re.search("^\d+$", text) : # if the values are numbers, we convert them into number type
                 if int(text) == float(text) :
                     value[index] = int(text)
                 else :
@@ -178,39 +177,49 @@ def findAssociatedValue(processed_entry : Doc, INDEXES_MAIN : dict, TAKEN_INDEXE
             return value[0], indexes
         else :
             return value, indexes
-
-def testRelation(index1 : int, index2 : int, relationType : str, hierarchyPosition : dict, dictEntities : dict) -> bool :
-    """Test if the relation is coherent, according to the relation"""
-    if relationType == "hierarchy" and (hierarchyPosition[index2] < hierarchyPosition[index1] or (hierarchyPosition[index2] == hierarchyPosition[index1] and dictEntities[index2] == "device")):
-        return True
-    elif relationType == "location" and hierarchyPosition[index2] == hierarchyPosition[index1]:
-        return True
-    return False
-
-def findIndexMainEntity(processed_entry : Doc, dictEntities : dict, indexAction : int) -> int :
-    counter = 0
-    currentIndexes = {index:index for index in dictEntities.keys()}
-    currentWords = {index:processed_entry[index] for index in currentIndexes.keys()}
-
-    while (not indexAction in currentIndexes.values()) and counter < 3 :
-        currentWords = {originIndex : processed_entry[currentIndex].head for originIndex,currentIndex in currentIndexes.items()}
-        currentIndexes = {originIndex : currentWords[originIndex].i for originIndex,_ in currentIndexes.items()}
-
-        if list(currentIndexes.values()).count(indexAction) == 1 :
-            return [originIndex for originIndex,currentIndex in currentIndexes.items() if currentIndex == indexAction][0]
-        counter += 1
-
-    if counter == 5 :
-        raise Exception("Main entity not found")
     
-    if list(currentIndexes.values()).count(indexAction) != 1 :
-        listIndexesRemaining = [originIndex for originIndex,currentIndex in currentIndexes.items() if currentIndex == indexAction and originIndex > indexAction]
-        return listIndexesRemaining[0]
-    else :
-        return [originIndex for originIndex,currentIndex in currentIndexes.items() if currentIndex == indexAction][0]
-
+'''
+In every request, there is a main entity (related to the main subject) and entities mentionned for precisions
+This function identifies the main entity and its relations with the others
+'''
 def findRelations(processed_entry : Doc, dictEntities : dict, indexAction : int) -> dict :
 
+    # Identifies the main entity (related to the main subject / action) among all entities
+    def findIndexMainEntity(processed_entry : Doc, dictEntities : dict, indexAction : int) -> int :
+        counter = 0
+        # we create a dict made of originalIndex : currentIndex for all entities
+        currentIndexes = {index:index for index in dictEntities.keys()}
+        currentWords = {index:processed_entry[index] for index in currentIndexes.keys()}
+
+        # The first entity to reach the action verb (in terms of dependencies) is considered the main entity
+        # "counter" variable : if the entities are too far from the action verb, we stop
+        while (not indexAction in currentIndexes.values()) and counter < 3 :
+            # we update the current indexes and words for each entity
+            currentWords = {originIndex : processed_entry[currentIndex].head for originIndex,currentIndex in currentIndexes.items()}
+            currentIndexes = {originIndex : currentWords[originIndex].i for originIndex,_ in currentIndexes.items()}
+
+            if list(currentIndexes.values()).count(indexAction) == 1 :
+                return [originIndex for originIndex,currentIndex in currentIndexes.items() if currentIndex == indexAction][0]
+            counter += 1
+
+        if counter == 5 :
+            raise Exception("Main entity not found")
+        
+        if list(currentIndexes.values()).count(indexAction) != 1 :
+            listIndexesRemaining = [originIndex for originIndex,currentIndex in currentIndexes.items() if currentIndex == indexAction and originIndex > indexAction]
+            return listIndexesRemaining[0]
+        else :
+            return [originIndex for originIndex,currentIndex in currentIndexes.items() if currentIndex == indexAction][0]
+        
+    # Test if the relation identified matches the entity hierarchy
+    def testRelation(index1 : int, index2 : int, relationType : str, hierarchyPosition : dict, dictEntities : dict) -> bool :
+        if relationType == "hierarchy" and (hierarchyPosition[index2] < hierarchyPosition[index1] or (hierarchyPosition[index2] == hierarchyPosition[index1] and dictEntities[index2] == "device")):
+            return True
+        elif relationType == "location" and hierarchyPosition[index2] == hierarchyPosition[index1]:
+            return True
+        return False
+
+    # A dict with the keywords for each relation type
     RELATIONS = {
         "hierarchy" : ["in", "inside", "of"],
         "location" : ["next"]
@@ -223,21 +232,35 @@ def findRelations(processed_entry : Doc, dictEntities : dict, indexAction : int)
 
     dictRelations = {index : None for index in dictEntities.keys()} # empty dict that will be filled
 
-    # go through the ancestors and check if there's a synonym of the relation key words
+    # go through the ancestors of each entity and check if there's a synonym of the relation key words
     for index in dictEntities.keys() :
         for ancestor in processed_entry[index].ancestors :
             for relation in RELATIONS.keys() :
-                if max([ancestor.similarity(nlp(word)[0]) > SIMILARITY_THRESHOLD for word in RELATIONS[relation]]) :
+                # here, the similarity thresold is different than usual
+                if max([ancestor.similarity(nlp(word)[0]) > 0.8 for word in RELATIONS[relation]]) : # similarity check
+                    # the "of" keyword could be assigned to a non-entity word
                     if ancestor.lower_ == "of" and ancestor.head.i not in dictEntities.keys() : continue
                     dictRelations[index] = relation
                     break
 
+            if index in dictRelations.keys() :
+                break    
+        
+        # we check if the token right before the entity is a relation keyword
+        if index-1 > 0 :
+            for relation in RELATIONS.keys() :
+                if max([processed_entry[index-1].similarity(nlp(word)[0]) > 0.8 for word in RELATIONS[relation]]) :
+                    if processed_entry[index-1].lower_ == "of" and processed_entry[index-1].head.i not in dictEntities.keys() : continue
+                    dictRelations[index] = relation
+                    break
+
     # if zero or more than 1 entities don't have a relation
-    withoutRelationCounter = list(dictRelations.values()).count(None)
+    withoutRelationCounter = list(dictRelations.values()).count(None) # the nb of entities without relation
     if  withoutRelationCounter != 1 :
-        dictWithoutRelations = {index : relation for (index,relation) in dictRelations.items() if relation == None}
-        if withoutRelationCounter == 0 :
-            dictWithoutRelations = dictEntities
+        dictWithoutRelations = dictEntities
+        if withoutRelationCounter != 0 :
+            dictWithoutRelations = {index : relation for (index,relation) in dictRelations.items() if relation == None}
+        # we find the main entity among the ones without relation
         INDEX_MAIN_ENTITY = findIndexMainEntity(processed_entry, dictWithoutRelations, indexAction)
 
     # if only one entity is not attached to a relation keyword, it's the main one
@@ -245,6 +268,7 @@ def findRelations(processed_entry : Doc, dictEntities : dict, indexAction : int)
         INDEX_MAIN_ENTITY = [index for index,relation in dictRelations.items() if relation == None][0]
 
     # the hierarchy position : 0 is site, 3 is rack... etc
+    # TODO : improve the hierarchyPosition dict
     hierarchyPosition = {index : list(wiki.ENTITIES.keys()).index(entity) for index, entity in dictEntities.items()}
     finalRelations = dict()
 
@@ -259,6 +283,7 @@ def findRelations(processed_entry : Doc, dictEntities : dict, indexAction : int)
                 else:
                     finalRelations[index] = (token.i, "ERROR")
                 break
+            # if the current entity refers to the main action, we assign it to the main entity
             elif token.i == indexAction:
                 if testRelation(INDEX_MAIN_ENTITY, index, relation, hierarchyPosition, dictEntities):
                     finalRelations[index] = (INDEX_MAIN_ENTITY, relation)
@@ -633,9 +658,16 @@ def buildFullName(dictioEntityNames : dict, dictEntities : dict, finalRelations 
                 # If a hole has been detected previously and a parent has been detected, such a name with a hole is searched
                 if holeGluer != None:
                     for existingName in EXISTING_ENTITY_NAMES.keys():
+                        # partialSplit = partialName.split("/")
+                        # beginningPartialName = ""
+                        # for splitted in partialSplit[:-1]:
+                        #     beginningPartialName += "/" + splitted
+                        # correspondingName = re.findall(f"{holeGluer}/[-/\w]+{beginningPartialName}$", existingName)
                         correspondingName = re.findall(f"{holeGluer}/[-/\w]+{partialName}$", existingName)
                         if EXISTING_ENTITY_NAMES[existingName] == dictEntities[entityIndex] and len(correspondingName) > 0:
+                            # return existingName + partialName
                             return existingName
+                    print(holeGluer + " + " + partialName)
                     raise ValueError("One of the parent name is incorrect or not all the parent tree is known to name the object.")
                 # Search for existing entity with the same partial name
                 for existingName in EXISTING_ENTITY_NAMES.keys():
@@ -644,6 +676,9 @@ def buildFullName(dictioEntityNames : dict, dictEntities : dict, finalRelations 
                 # Extreme emergency : assuming that specified entity and MAIN_ENTITY have the same parental tree
                 if temporaryIndex != None:
                     parentalTreeIndexList.append(temporaryIndex)
+                for existingName in EXISTING_ENTITY_NAMES.keys():
+                    if EXISTING_ENTITY_NAMES[existingName] == list(wiki.ENTITIES.keys())[level]:
+                        return existingName + partialName
                 # Informations are incomplete
                 else:
                     raise ValueError("Not all the parent tree is known to name the object.")
@@ -664,6 +699,10 @@ def buildFullName(dictioEntityNames : dict, dictEntities : dict, finalRelations 
             for existingName in EXISTING_ENTITY_NAMES.keys():
                 if len(existingName) >= len(partialName) and partialName == existingName[-len(partialName):]:
                     return existingName
+        for existingName in EXISTING_ENTITY_NAMES.keys():
+            if EXISTING_ENTITY_NAMES[existingName] == "site":
+                return existingName + partialName
+        raise ValueError("No site available")
 
     # TODO : adapt hierarchyPosition
 
@@ -675,8 +714,9 @@ def getKeyWords(processed_entry : Doc) -> dict :
 
     KEY_WORDS_ENTRY = {}
     # we detect key words in the sentence given and put them into KEY_WORDS_ENTRY
-    lastParameter = None
+    lastParameter = None, None
     for index,token in enumerate(processed_entry) :
+        # print(KEY_WORDS_ENTRY, lastParameter)
         matching_list = [] # list of tuples with the similarity score and type of key word (for each key word)
         if token.pos_ == "VERB" and str(token) == token.lemma_ and token.head == token : # 2nd test : if infinitive verb
             for parameter in ACTIONS_DEFAULT_KEYS :
@@ -699,15 +739,22 @@ def getKeyWords(processed_entry : Doc) -> dict :
         match = max(matching_list)
 
         # if "called" or a synonym is used for a parameter and not for an entity
-        if match[1] == "name" and (lastParameter == token.head or lastParameter in token.children) :
+        if match[1] == "name" and lastParameter[0] and (lastParameter[0] == token.head.i or processed_entry[lastParameter[0]] in token.children) :
             continue
-        if match[1] == lastParameter and match[1] not in ["name","position"] :
+        if match[1] == lastParameter[1] and match[1] not in ["name","position"] :
             continue
         if match[0] > SIMILARITY_THRESHOLD :
             # if is considered a key word, is added to the dict
+            if match[1] == "entity" and match[0] != 1 :
+                continue
+            if (match[1] == "position" 
+            and match[1] == lastParameter[1] 
+            and processed_entry[index].lower_ == "from"
+            and processed_entry[lastParameter[0]].lower_ != "from") :
+                continue
             KEY_WORDS_ENTRY[index] = match[1] 
             if match[1] in PARAMETERS_DICT_KEYS :
-                lastParameter = match[1]
+                lastParameter = (index,match[1])
 
     return KEY_WORDS_ENTRY
 
@@ -728,7 +775,6 @@ def NL_to_OCLI(ocliFile : str) -> str :
     TAKEN_INDEXES.extend(KEY_WORDS_ENTRY.keys())
 
     dictEntities = {index : processed_entry[index].text for index,keyword in KEY_WORDS_ENTRY.items() if keyword == "entity"}
-    print("dictEntities :", dictEntities)
 
     dictioNameIndexes, dictEntities, TAKEN_INDEXES = name(processed_entry,
                                                             dictEntities,
@@ -755,6 +801,7 @@ def NL_to_OCLI(ocliFile : str) -> str :
     # if no entity :check the ocli file
     indexAction= [index for index,keyword in KEY_WORDS_ENTRY.items() if keyword in ACTIONS_DEFAULT_KEYS][0]
     finalRelations = findRelations(processed_entry, dictEntities, indexAction)
+    print("relations : ", finalRelations)
     indexMainSubject = findIndexMainSubject(processed_entry, KEY_WORDS_ENTRY, indexAction, INDEX_MAIN_ENTITY)  
 
     INDEXES_MAIN = {"subject" : indexMainSubject, 
@@ -776,45 +823,64 @@ def NL_to_OCLI(ocliFile : str) -> str :
         stringName = "".join([processed_entry[index].text for index in valueIndexes])
         if stringName[-1] in ["/","\\"] : stringName = stringName[:-1]
         dictioEntityNames[entityIndex] = stringName
-    print("dictioNameIndexes : ", dictioNameIndexes)
+    # print("dictioNameIndexes : ", dictioNameIndexes)
     print("dictioEntityNames : ",dictioEntityNames)
     print("dictEntities : ", dictEntities)
+
+    if not INDEXES_MAIN["entity"] in dictioEntityNames.keys():
+        dictioEntityNames[INDEXES_MAIN["entity"]] = scrapping.createDefaultName(dictEntities[INDEXES_MAIN["entity"]], EXISTING_ENTITY_NAMES)
     
     association = associateParameters(processed_entry, KEY_WORDS_ENTRY, dictEntities, dictioEntityNames)
     print("association : ", association)
 
     fullName = buildFullName(dictioEntityNames, dictEntities, finalRelations, INDEX_MAIN_ENTITY, EXISTING_ENTITY_NAMES, KEY_WORDS_ENTRY[INDEXES_MAIN["action"]])
-    print(fullName)
+    print("fullname : ", fullName)
     if fullName == None:
         raise ValueError("Not all the parent tree is known to name the object.")
     
-    # TODO : change the name of parameters depending on the entity (e.g. unit -> floorUnit)
-    if INDEXES_MAIN["subject"] in KEY_WORDS_ENTRY.keys() and KEY_WORDS_ENTRY[INDEXES_MAIN["subject"]] == "entity" :
+    if (INDEXES_MAIN["subject"] in KEY_WORDS_ENTRY.keys() 
+        and INDEXES_MAIN["subject"] == INDEXES_MAIN["entity"]) :
         # we do the processes related to each parameter
 
         if KEY_WORDS_ENTRY[INDEXES_MAIN["action"]] == "ACTION_POSITIVE" :
             if fullName in EXISTING_ENTITY_NAMES.keys():
                 raise ValueError(f'This {dictEntities[INDEXES_MAIN["subject"]]} already exists.')
-            dictioEntityParameters = wiki.makeDictParam(processed_entry[INDEXES_MAIN["subject"]].text)
+            
+            dictioEntityParameters = {}
+            listGivenParameters = []
+            for index,(entityIndex, parameterName) in association.items() :
+                if entityIndex == INDEXES_MAIN["subject"] :
+                    listGivenParameters.append(parameterName)
+            isGivenTemplate = "template" in listGivenParameters
+            if dictEntities[INDEXES_MAIN["subject"]] == "device" :
+                dictioEntityParameters = wiki.makeDictParam(dictEntities[INDEXES_MAIN["subject"]], isGivenTemplate, listGivenParameters)
+            else :
+                dictioEntityParameters = wiki.makeDictParam(dictEntities[INDEXES_MAIN["subject"]], isGivenTemplate)
+
             dictioEntityParameters["name"] = fullName.upper()
             allEntryItemsList = list(KEY_WORDS_ENTRY.items())
+
             for counter,(index,parameterName) in enumerate(allEntryItemsList) :
                 if ((not parameterName in PARAMETERS_DICT_KEYS) 
-                    or bool(dictioEntityParameters[parameterName]) == True 
+                    or parameterName not in dictioEntityParameters.keys()
+                    or dictioEntityParameters[parameterName]
                     or association[index][0] != INDEXES_MAIN["subject"]) :
                     continue
                 lastKeyWordIndex = 0 if counter == 0 else allEntryItemsList[counter-1][0]
                 nextKeyWordIndex = len(processed_entry) if counter == len(allEntryItemsList)-1 else allEntryItemsList[counter+1][0]
                 # get the parameter value
-                # TODO : change to the get file
                 parameterValue, parameterIndex = get.FUNCTIONS[parameterName](processed_entry, 
-                                                                          index, 
-                                                                          dictEntities[association[index][0]], 
-                                                                          lastKeyWordIndex, 
-                                                                          nextKeyWordIndex, 
-                                                                          TAKEN_INDEXES)
+                                                                            index, 
+                                                                            dictEntities[association[index][0]], 
+                                                                            lastKeyWordIndex, 
+                                                                            nextKeyWordIndex, 
+                                                                            TAKEN_INDEXES)
                 TAKEN_INDEXES.extend(parameterIndex)
                 dictioEntityParameters[parameterName] = parameterValue # store the value
+
+            for parameterName, value in dictioEntityParameters.items() :
+                if value == None and dictEntities[INDEXES_MAIN["entity"]] in wiki.DEFAULT_VALUE.keys() and parameterName in wiki.DEFAULT_VALUE[dictEntities[INDEXES_MAIN["entity"]]] :
+                    dictioEntityParameters[parameterName] = wiki.DEFAULT_VALUE[dictEntities[INDEXES_MAIN["entity"]]][parameterName]
             
             print("dictioEntityParameters : ", dictioEntityParameters)
             FINAL_INSTRUCTION = tools.create(dictEntities[INDEXES_MAIN["subject"]], dictioEntityParameters)
@@ -862,7 +928,7 @@ def NL_to_OCLI(ocliFile : str) -> str :
 
             # get the parameter value
             parameterValue, parameterIndexes = findAssociatedValue(processed_entry, INDEXES_MAIN, TAKEN_INDEXES, parameterName, dictEntities[attachedEntityIndex])
-            print(parameterValue)
+            print("parameterValue : ", parameterValue)
             TAKEN_INDEXES.extend(parameterIndexes)
 
             fullName = buildFullName(dictioEntityNames, dictEntities, finalRelations, attachedEntityIndex, EXISTING_ENTITY_NAMES, KEY_WORDS_ENTRY[INDEXES_MAIN["action"]])

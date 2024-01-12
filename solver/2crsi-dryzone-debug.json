@@ -1,0 +1,30 @@
+{ 
+    "slug"        : "2crsi-dryzone-debug",
+    "description" : "SUBMER DRYZONE",
+    "category"    : "rack",
+    "sizeWDHmm"   : [1835 ,174 ,1148],
+    "comments"    : "1835=98+483+95+483+95+483+98",
+    "attributes"  : {
+      "type"        : "rack",
+      "vendor"      : "2SRCI",
+      "model"       : "dryzone"
+    },
+    "colors" : [],
+    "components"  : [
+    ],
+    "slots" : [
+      { "location": "L1R", "type": "slot", "elemOrient" : "vertical",  "elemPos" : [  98,   0, 548], "elemSize" : [ 600,44.5,483], "mandatory":"no", "labelPos":"right" , "color": "ffff00", "attributes": {"factor": "19inch-1u"} },
+      { "location": "L1C", "type": "slot", "elemOrient" : "vertical",  "elemPos" : [ 676,   0, 548], "elemSize" : [ 600,44.5,483], "mandatory":"no", "labelPos":"top" , "color": "ffff00", "attributes": {"factor": "19inch-1u"} },
+      { "location": "L1L", "type": "slot", "elemOrient" : "vertical",  "elemPos" : [1254,   0, 548], "elemSize" : [ 600,44.5,483], "mandatory":"no", "labelPos":"top" , "color": "ffff00", "attributes": {"factor": "19inch-1u"} },
+      { "location": "L2R", "type": "slot", "elemOrient" : "vertical",  "elemPos" : [  98,  45, 548], "elemSize" : [ 600,44.5,483], "mandatory":"no", "labelPos":"top" , "color": "ffff00", "attributes": {"factor": "19inch-1u"} },
+      { "location": "L2C", "type": "slot", "elemOrient" : "vertical",  "elemPos" : [ 676,  45, 548], "elemSize" : [ 600,44.5,483], "mandatory":"no", "labelPos":"top" , "color": "ffff00", "attributes": {"factor": "19inch-1u"} },
+      { "location": "L2L", "type": "slot", "elemOrient" : "vertical",  "elemPos" : [1254,  45, 548], "elemSize" : [ 600,44.5,483], "mandatory":"no", "labelPos":"top" , "color": "ffff00", "attributes": {"factor": "19inch-1u"} },
+      { "location": "L3R", "type": "slot", "elemOrient" : "vertical",  "elemPos" : [  98,  90, 548], "elemSize" : [ 600,44.5,483], "mandatory":"no", "labelPos":"top" , "color": "ffff00", "attributes": {"factor": "19inch-1u"} },
+      { "location": "L3C", "type": "slot", "elemOrient" : "vertical",  "elemPos" : [ 676,  90, 548], "elemSize" : [ 600,44.5,483], "mandatory":"no", "labelPos":"top" , "color": "ffff00", "attributes": {"factor": "19inch-1u"} },
+      { "location": "L3L", "type": "slot", "elemOrient" : "vertical",  "elemPos" : [1254,  90, 548], "elemSize" : [ 600,44.5,483], "mandatory":"no", "labelPos":"top" , "color": "ffff00", "attributes": {"factor": "19inch-1u"} },
+      { "location": "L4R", "type": "slot", "elemOrient" : "horizontal",  "elemPos" : [  98, 135, 548], "elemSize" : [ 483,44.5,600], "mandatory":"no", "labelPos":"top" , "color": "ffff00", "attributes": {"factor": "19inch-1u"} },
+      { "location": "L4C", "type": "slot", "elemOrient" : "vertical",  "elemPos" : [ 676, 135, 548], "elemSize" : [ 600,44.5,483], "mandatory":"no", "labelPos":"top" , "color": "ffff00", "attributes": {"factor": "19inch-1u"} },
+      { "location": "L4L", "type": "slot", "elemOrient" : "vertical",  "elemPos" : [1254, 135, 548], "elemSize" : [ 600,44.5,483], "mandatory":"no", "labelPos":"top" , "color": "ffff00", "attributes": {"factor": "19inch-1u"} }
+    ]
+   }
+   
