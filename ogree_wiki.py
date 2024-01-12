@@ -1,6 +1,7 @@
 import re
 
 ENTITIES = {
+            "tenant" : "tn",
             "site" : "si",
             "building" : "bd",
             "room" : "ro",
@@ -15,6 +16,9 @@ ENTITIES = {
             }
 
 PARAMETERS_NAME = {
+                "tenant" : {"mandatory" : ["name","color"],
+                            "optional" : []
+                            },
                 "site" : {  "mandatory" : ["name"], 
                             "optional" : ["orientation"]
                             },
@@ -22,7 +26,7 @@ PARAMETERS_NAME = {
                                 "optional" : ["size","template"]
                                 },
                 "room" : {  "mandatory" : ["name","position","rotation"], 
-                            "optional" : ["size", "axisOrientation", "floorUnit"]
+                            "optional" : ["size", "axisOrientation", "floorUnit","template"]
                             },
                 "rack" : {  "mandatory" : ["name", "position", "unit","rotation"],
                             "optional" : ["size","template"]
@@ -36,7 +40,7 @@ PARAMETERS_NAME = {
                             "optional" : []
                             },
                 "tag" :     {
-                            "mandatory" : ["name","color"],
+                            "mandatory" : ["template","color"],
                             "optional" : []
                             },
                 "pillar" :  {
@@ -48,12 +52,77 @@ PARAMETERS_NAME = {
                             "optional"  : ["attribute","font","background","name"]
                 },
                 "separator" : {
-                            "mandatory" : ["name","startPosition","endPosition","wall"],
+                            "mandatory" : ["name","startPosition","endPosition","type"],
                             "optional"  :[]
                 }
                 }
 
+COLORS_HEX_BASIC = {
+    'red': '#FF0000',
+    'green': '#00FF00',
+    'blue': '#0000FF',
+    'white': '#FFFFFF',
+    'black': '#000000',
+    'yellow': '#FFFF00',
+    'purple': '#800080',
+    'orange': '#FFA500',
+    'pink': '#FFC0CB',
+    'brown': '#A52A2A',
+    'cyan': '#00FFFF',
+    'gray': '#808080',
+    'grey': '#808080'
+}
+
+DEFAULT_UNITS = {
+    "building" : {
+        "position" : ["m","m"],
+        "size" : ["m","m","m"]
+    },
+    "room" : {
+        "position" : ["m","m"],
+        "size" : ["m","m","m"]
+    },
+    "rack" : {
+        "position" : ["t","t","cm"],
+        "size" : ["cm","cm","u"]
+    },
+    "corridor" : {
+        "position" : ["t","t","cm"],
+        "size" : ["cm","cm","cm"]
+    },
+    "separator" : {
+        "position" : ["m","m"]
+    },
+    "pillar" : {
+        "position" : ["m","m"],
+        "size" : ["m","m"]
+    }
+}
+
+DEFAULT_VALUE = {
+    "tenant" : {"color" : "#FFFFFF"},
+    "building" : {"position" : [0,0], "rotation" : 0},
+    "room" : {"position" : [0,0], "rotation" : 0, "axisOrientation" : "+x+y", "floorUnit" : "t"},
+    "rack" : {"position" : [0,0], "unit" : "t", "rotation" : [0,0,0]},
+    "device" : {"position" : 0, "size" : 0},
+    "corridor" : {"position" : [0,0], "rotation" : [0,0,0], "temperature" : "warm", "unit" : "t"},
+    "tag" : {"color" : "#FFFFFF"},
+    "separator" : {"type" : "wireframe"},
+    "pillar" : {"position" : [0,0], "rotation" : 0}
+}
+
 PARAMETERS_FORMAT = {
+                "tenant" : {
+                    "name" : {
+                        "description" : "name of the tenant without blankspaces",
+                        "type" : [str]
+                    },
+                    "color" : {
+                        "description" : "hexadecimal color code for the tenant (e.g #ff0000)",
+                        "type" : [str]
+                    }
+
+                },
                 "site" : {
                             "name" : {
                                         "description" : "name of the site without blankspaces",
@@ -94,8 +163,7 @@ PARAMETERS_FORMAT = {
                                         "position" : {
                                                         "description" : "vector [x,y] or [x,y,z] in m, float",
                                                         "type" : [list],
-                                                      #  "len" : 2, Ici c'est 2 ou 3 et de la manière dont ça a été codé il vaut mieux
-                                                      #rien mettre
+                                                        "len" : [2,3],
                                                         "type_value" : [float, int]
                                                         },
                                         "rotation" : {
@@ -213,8 +281,8 @@ PARAMETERS_FORMAT = {
                                 },
                         },
                 "tag" : {
-                        "name" : {
-                                "description" : "name of the tag. Replace slug",
+                        "template" : {
+                                "description" : "template of the tag. Replace slug",
                                 "type" : [str]
                         },
                         "color" : {
@@ -247,10 +315,31 @@ PARAMETERS_FORMAT = {
 }           
                 
 
-def makeDictParam(entity : str) -> dict :
+def makeDictParam(entity : str, isGivenTemplate : bool = False, deviceGivenParameters : list = []) -> dict :
     dictio = {}
-    for parameter in listAllParameter(entity) :
+    for parameter in PARAMETERS_NAME[entity]["mandatory"] :
         dictio[parameter] = None
+
+    if entity == "device" :
+        if "slot" in deviceGivenParameters :
+            dictio["slot"] = None
+        else :
+            dictio["position"] = None
+        if "template" in deviceGivenParameters :
+            dictio["template"] = None
+            if "side" in deviceGivenParameters :
+                dictio["side"] = None
+        else :
+            dictio["size"] = None
+
+    else :
+        if isGivenTemplate :
+            dictio["template"] = None
+        else : 
+            for parameter in PARAMETERS_NAME[entity]["optional"] :
+                if parameter != "template" :
+                    dictio[parameter] = None
+
     return dictio
 
 def listAllParameter(element : str) :
