@@ -53,11 +53,12 @@ KEY_WORDS_ALL = {**ENTITIES_FULL_NAME,  **PARAMETERS_DICT} # ALL KEYWORDS TO BE 
 PARAMETERS_DICT_KEYS = PARAMETERS_DICT.keys()
 ACTIONS_DEFAULT_KEYS = ACTIONS_DEFAULT.keys()
 
-'''
-This function returns the main subject of the entry, that means the entity/parameter related to the action
-The identification is based on the action
-'''
+
 def findIndexMainSubject(processed_entry : Doc, dictioIndexKeyWords : dict, indexAction : int, indexMainEntity : int = None) -> int :
+    """
+    This function returns the main subject of the entry, that means the entity/parameter related to the action
+    The identification is based on the action
+    """
 
     # This function searches the subject in the token's children (if exist) while a candidate subject has not been found
     def searchSubjectRecursive(processed_entry : Doc, currentIndex : int, testConformity, level : int = 0) -> (list|None):
@@ -118,10 +119,10 @@ def findIndexMainSubject(processed_entry : Doc, dictioIndexKeyWords : dict, inde
             else :
                 return resultOnlyEntity[0]
 
-'''
-This function finds the related value to the main subject when the action is "ALTERATION"
-'''
 def findAssociatedValue(processed_entry : Doc, INDEXES_MAIN : dict, TAKEN_INDEXES : list = [], parameter : str = None, attachedEntity : str = None) :
+    """
+    This function finds the related value to the main subject when the action is "ALTERATION"
+    """
 
     # Same as searchSubjectRecursive -> look above
     def searchAssociatedKeyWordRecursive(processed_entry : Doc, currentIndex : int, level : int = 0) -> (list|None) :
@@ -178,11 +179,11 @@ def findAssociatedValue(processed_entry : Doc, INDEXES_MAIN : dict, TAKEN_INDEXE
         else :
             return value, indexes
     
-'''
-In every request, there is a main entity (related to the main subject) and entities mentionned for precisions
-This function identifies the main entity and its relations with the others
-'''
 def findRelations(processed_entry : Doc, dictEntities : dict, indexAction : int) -> dict :
+    """
+    In every request, there is a main entity (related to the main subject) and entities mentionned for precisions
+    This function identifies the main entity and its relations with the others
+    """
 
     # Identifies the main entity (related to the main subject / action) among all entities
     def findIndexMainEntity(processed_entry : Doc, dictEntities : dict, indexAction : int) -> int :
@@ -462,23 +463,31 @@ def name(processed_entry : Doc,
 
 # TODO : remove dictioEntityNames as parameter and change the function
 def associateParameters(processed_entry : Doc, KEY_WORDS_ENTRY : dict, dictEntities : dict, dictioEntityNames : dict) -> dict :
+    """
+    Associate the index of all parameters to the entity
+    """
     SPECIAL_KEY_WORD = ["for", "to"]
 
     association = {}
 
+    # If only one entity is detected, all parameters are associated to it
     if len(dictEntities) == 1:
         for index, keyword in KEY_WORDS_ENTRY.items():
             if keyword in PARAMETERS_DICT_KEYS:
                 association[index] = (INDEX_MAIN_ENTITY, keyword)
         return association
     
+    # Go through every key words
     for index, keyword in KEY_WORDS_ENTRY.items():
         flagFor = False
+        # If the word is a parameter
         if keyword in PARAMETERS_DICT_KEYS:
 
+            # If every entity has a name in the sentence
             if len(dictEntities) == len(dictioEntityNames):
 
                 if keyword != "name":
+                    # Keyword "for/to" and an entity are searched in the subtree
                     for token in processed_entry[index].subtree:
                         if token.lower_ in SPECIAL_KEY_WORD:
                             flagFor = True
@@ -487,13 +496,16 @@ def associateParameters(processed_entry : Doc, KEY_WORDS_ENTRY : dict, dictEntit
                             break
 
                 else:
+                    # The entity is searched in the ancestors for the name
                     for ancestor in processed_entry[index].ancestors:
                         if ancestor.i in dictEntities.keys() and not((ancestor.i, keyword) in association.values()):
                             association[index] = (ancestor.i, keyword)
                             break
 
+            # If the number of name is lower than the number of entity
             else:
 
+                # The entity is searched in the ancestors for the name
                 if keyword == "name":
                     for ancestor in processed_entry[index].ancestors:
                         if ancestor.i in dictEntities.keys() and not((ancestor.i, keyword) in association.values()):
@@ -503,27 +515,26 @@ def associateParameters(processed_entry : Doc, KEY_WORDS_ENTRY : dict, dictEntit
                 else:
 
                     for ancestor in processed_entry[index].ancestors:
+                        # If the ancestor is a name and already associated to an entity, skip this ancestor
                         if (ancestor.i, "name") in list(association.values()):
                             continue
 
+                        # If the ancestor is a name, the parameter will later be added to the corresponding entity
                         if ancestor.i in KEY_WORDS_ENTRY.keys() and KEY_WORDS_ENTRY[ancestor.i] == "name":
                             association[index] = ([ancestor.i], keyword)
                             break
-
+                        
+                        # If an entity is detected in the ancestors
                         if ancestor.i in dictEntities.keys() and not((ancestor.i, keyword) in association.values()):
                             association[index] = (ancestor.i, keyword)
                             break
-
-            # if not index in association.keys():
-            #     for token in processed_entry[index].subtree:
-            #         if token.i in dictEntities.keys():
-            #             association[index] = (token.i, keyword)
-            #             break
             
+            # If no association has been made for the parameter, it is associated to the main entity
             if not index in association.keys():
                 association[index] = (INDEX_MAIN_ENTITY, keyword)
 
 
+    # If a parameter was associated to a name, the parameter is now associated to the corresponding entity
     for index, (index2, parameterType) in association.items():
         if type(index2) == list:
             association[index] = (association[index2[0]][0], parameterType)
@@ -531,6 +542,10 @@ def associateParameters(processed_entry : Doc, KEY_WORDS_ENTRY : dict, dictEntit
     return association
 
 def slashInName(parentName : str, partialName : str, EXISTING_ENTITY_NAMES : dict, dictEntities : dict, entityIndex : int):
+    """
+    Elementary function for buildFullName, count all the entity known and the number of device in order to update the level counter
+    """
+
     if parentName[0] != "/":
         parentName = "/" + parentName
     if parentName[-1] == "/":
@@ -543,6 +558,7 @@ def slashInName(parentName : str, partialName : str, EXISTING_ENTITY_NAMES : dic
     parentSplit.reverse()
     prevEntityType = None
     existingEntityType = None
+    # Find the entity type of the last entity
     if partialName != "":
         partialSplit = partialName[1:].split("/")
         if len(partialSplit) == 1:
@@ -551,6 +567,8 @@ def slashInName(parentName : str, partialName : str, EXISTING_ENTITY_NAMES : dic
             for existingName in EXISTING_ENTITY_NAMES.keys():
                 if len(existingName) >= len(partialSplit[0]) and partialSplit[0] == existingName[-len(partialSplit[0]):]:
                     prevEntityType = EXISTING_ENTITY_NAMES[existingName]
+
+    # for parents, search if the name exists and detect if it is a device or not
     for i, subParent in enumerate(parentSplit):
         existingEntityType = None
         if i == 0 and prevEntityType == None:
@@ -574,20 +592,24 @@ def slashInName(parentName : str, partialName : str, EXISTING_ENTITY_NAMES : dic
             raise ValueError("One of the parent name is incorrect.")
         prevEntityType = existingEntityType
 
+    # Construct the name
     partialName = parentName + partialName
     if partialName[-1] == "/":
         partialName = partialName[:-1]
     return partialName, knownEntity, knownDevice
 
 def buildFullName(dictioEntityNames : dict, dictEntities : dict, finalRelations : dict, entityIndex : int, EXISTING_ENTITY_NAMES : dict, actionType : str) -> str :
-    """Build the full name of the entity specified"""
-
+    """
+    Build the full name of the entity specified
+    """
+    
     # Start with the partial name : the name of the entity specified
     partialName = dictioEntityNames[entityIndex]
     # List that contains all the entity index that are part of the name
     parentalTreeIndexList = [entityIndex]
     # Dictionnary that gives a level of hierarchy to an entity. Ex : index_of_a_site : 0, index_of_a_building : 1
     hierarchyPosition = {index : list(wiki.ENTITIES.keys()).index(entity) for index, entity in dictEntities.items()}
+    # Counter and flag needed to go through the levels
     levelCounter = hierarchyPosition[entityIndex]
     startingLevel = hierarchyPosition[entityIndex] - 1
     holeDetected = False
@@ -602,7 +624,7 @@ def buildFullName(dictioEntityNames : dict, dictEntities : dict, finalRelations 
                 partialName = dictioEntityNames[indexParent] + "/" + partialName
                 supDeviceCounter += 1
 
-    # Check if the name has been written with / character 
+    # Check if the name has been written with / character and adjust the starting level
     if "/" in partialName:
         partialName, knownEntity, knownDevice = slashInName(partialName, "", EXISTING_ENTITY_NAMES, dictEntities, entityIndex)
         if knownEntity == -1:
@@ -658,14 +680,8 @@ def buildFullName(dictioEntityNames : dict, dictEntities : dict, finalRelations 
                 # If a hole has been detected previously and a parent has been detected, such a name with a hole is searched
                 if holeGluer != None:
                     for existingName in EXISTING_ENTITY_NAMES.keys():
-                        # partialSplit = partialName.split("/")
-                        # beginningPartialName = ""
-                        # for splitted in partialSplit[:-1]:
-                        #     beginningPartialName += "/" + splitted
-                        # correspondingName = re.findall(f"{holeGluer}/[-/\w]+{beginningPartialName}$", existingName)
                         correspondingName = re.findall(f"{holeGluer}/[-/\w]+{partialName}$", existingName)
                         if EXISTING_ENTITY_NAMES[existingName] == dictEntities[entityIndex] and len(correspondingName) > 0:
-                            # return existingName + partialName
                             return existingName
                     print(holeGluer + " + " + partialName)
                     raise ValueError("One of the parent name is incorrect or not all the parent tree is known to name the object.")
@@ -683,10 +699,13 @@ def buildFullName(dictioEntityNames : dict, dictEntities : dict, finalRelations 
                 else:
                     raise ValueError("Not all the parent tree is known to name the object.")
     
+    # Correct the beginning of the name
     if partialName[:2] != "/P/":
         partialName = "/P" + partialName
+    # If there is a hole for the last level (site), search for an existing name
     if holeDetected:
         partialName = partialName[2:]
+        # if ACTION_POSITIVE, keep the partial name without the current entity
         if actionType == "ACTION_POSITIVE":
             partialSplit = partialName.split("/")
             beginningPartialName = ""
@@ -695,6 +714,7 @@ def buildFullName(dictioEntityNames : dict, dictEntities : dict, finalRelations 
             for existingName in EXISTING_ENTITY_NAMES.keys():
                 if len(existingName) >= len(beginningPartialName) and beginningPartialName == existingName[-len(beginningPartialName):]:
                     return existingName + "/" + partialSplit[-1]
+        # if the entity already exists, keep all the partial name
         else:
             for existingName in EXISTING_ENTITY_NAMES.keys():
                 if len(existingName) >= len(partialName) and partialName == existingName[-len(partialName):]:
@@ -704,7 +724,7 @@ def buildFullName(dictioEntityNames : dict, dictEntities : dict, finalRelations 
                 return existingName + partialName
         raise ValueError("No site available")
 
-    # TODO : adapt hierarchyPosition
+    # TODO : adapt hierarchyPosition to manage groups etc
 
     return partialName
 
