@@ -10,7 +10,7 @@ def scrapAllName(filename : str) -> dict:
     allCommand = []
     entityWithName = dict()
 
-    with open(filename, "r") as commands:
+    with open("../"+filename, "r") as commands:
         line = commands.readline()
 
         # read all line and search for a creation command

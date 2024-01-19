@@ -508,7 +508,7 @@ def calculatePositionObjectRackCorri(entity_name : str, path : str, command_entr
             elif key == "bottom": 
                             pos.append(size_entity[2])
         
-    #TO DO : finish last case
+    # TODO : finish last case
         # elif entity_param[0] == "Device" and command_entry[0] =="Device":
             
         #     if key == "top":  
@@ -528,44 +528,14 @@ TYPES = {"+ro" : "Room", "+si" : "Site", "+bd" : "Building", "+room" : "Room", "
 if __name__ == "__main__":
     testCommand = "+bd:/P/BASIC/A@[0,0]@0@[24,30,1]"
     testCommand2 = "/P/BASIC/A/R1:separator+=SEPA1@[0,51]@[51,87]@plain"
-    #print(readFileOCLI("demo/simu1.ocli", "/P/BASIC/A/R1"))
-    # print(getTypeFromName("demo/simu1.ocli","/P/BASIC"))
-  #  path = "C:\\Users\\lemoi\\Documents\\Cours\\Commande_Entreprise\\GitHub\\OGrEE_NLP\\DEMO.BASIC.ocli"
+
     path = r"C:\Users\Admin\Desktop\dossier\DEMO_BASIC.ocli"
-    #print("getName : ",getTypeFromName(path,"SEPA1"))
-    # print(getAllParametersSeparatorsPillarsInRoom("/P/BASIC/A/R1",path))
-    #print(getAllSeparatorsPillars(path))
-    #commands = getAllNames(path)
-    #print(commands)
-    # for command in commands:
-    #     print("objet : ",command,"\t| parent : ", getParentName(command))
-    #objects = objects_in('/P/BASIC/A/R1',path)
-    #print(objects)
-    #for obj in objects:
-     #    print(obj)
-    # cmds = getParametersFromName('/P/BASIC/A/R1',path)
-    # print(cmds)
-   # print(getAllElementParameters('/P/BASIC/A/R1',path))
-    # room, list_object_Ocli = createListObject('/P/BASIC/A/R1',path)
-    # print(list_object_Ocli)
-    # print(room)
-    # print("Separators : ", room.separators)
-    # print("Pillar : ", room.pillars) 
-   # for cmd in cmds :
-   #     print(cmd)
-    # print(findChangesObjects(path))
-    #print(listItemsToChange(path))
-    # # # print(listeItemInRoomToChange('/P/BASIC/A/R1',path,objects_in('/P/BASIC/A/R1',path)))
-    # print(listSeparatorPillarChanged('/P/BASIC/A/R1',path,getAllParametersSeparatorsPillarsInRoom("/P/BASIC/A/R1",path) ))
-    # print(correctEntityParameters('/P/BASIC/A/R1',path, listSeparatorPillarChanged('/P/BASIC/A/R1',path,getAllParametersSeparatorsPillarsInRoom("/P/BASIC/A/R1",path) )))
-    # # print(correctEntityParameters('/P/BASIC/A/R1',path,listeItemInRoomToChange('/P/BASIC/A/R1',path,objects_in('/P/BASIC/A/R1',path))))
-    # print(getAllSeparatorsPillars(path))
-    # print(getAllParametersSeparatorsPillar('PILL1', path))
+    
     dictio = {}
     dictio["left"] = (7,"m")
     dictio["top"] = (0.3,"cm")
     dictio["front"] = (2,"f")
     entity = "Rack"
-    # print(calculatePositionObjectRoom('/P/BASIC/A/R1',path, (entity,dictio )))
+
     print(calculatePositionObjectRackCorri('/P/BASIC/A/R1/A01', path, (entity,dictio)))
     print(calculatePositionObjectRackCorri('PILL1', path, (entity,dictio)))
