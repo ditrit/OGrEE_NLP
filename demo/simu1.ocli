@@ -30,4 +30,17 @@
 +ro:/P/BASIC/A/R1@[0,0]@0@room-square1
 
 //rack
-+rk:/P/BASIC/A/R1/RACK1@[2,2]@t@[0,0,50]@[60,120,42]
++rk:/P/BASIC/A/R1/RACK1@[2,2]@t@[0,0,0]@[60,120,42]
++rk:/P/BASIC/A/R1/RACK2@[4,2]@t@[0,0,0]@[60,120,42]
++rk:/P/BASIC/A/R1/RACK3@[5,2]@t@[0,0,0]@[60,120,42]
++rk:/P/BASIC/A/R1/RACK4@[6,2]@t@[0,0,0]@[60,120,42]
++rk:/P/BASIC/A/R1/RACK5@[7,2]@t@[0,0,0]@[60,120,42]
+
+//device
++dv:/P/BASIC/A/R1/RACK1/chT@12@ibm-ns1200
++dv:/P/BASIC/A/R1/RACK1/chT/bladeA@blade01@ibm-nx360m5
+
++dv:/P/BASIC/A/R1/RACK2/chassis01@2@ibm-ns1200
++dv:/P/BASIC/A/R1/RACK2/chassis01/bladeA@blade01@ibm-nx360m5
++dv:/P/BASIC/A/R1/RACK2/chassis01/bladeB@blade02@ibm-nx360m5
++dv:/P/BASIC/A/R1/RACK2/chassis01/bladeC@blade03@ibm-nx360m5
