@@ -5,8 +5,6 @@ from typing import Optional
 import re
 import importlib
 
-import sys
-sys.path.append("..")
 import ogree_wiki as wiki
 importlib.reload(wiki)
 
