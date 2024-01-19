@@ -12,3 +12,5 @@ All the main methods are implemented and functional, you can test the plugin in 
 First thought : should be detected with "from" keyword
 
 - Integration to the CLI with enable/disable functionnality (because this plugin takes time)
+
+- Implement understanding of several object placement (e.g. "Add 4 racks at position 5 5").

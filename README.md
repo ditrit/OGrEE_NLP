@@ -26,7 +26,7 @@ All the criteria used come from the wiki : https://github.com/ditrit/OGrEE-Core/
 
 To launch, execute __*ogree_main.py*__
 
-- Please only give 1 instruction per sentence
+- Please only give 1 instruction per sentence (creation, destruction or modification of 1 object)
 - Write explicitly the name of entities : "building", "rack"...
 - Be precise, a lack of information could lead to non understanding
 - Write names in upper case
