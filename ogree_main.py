@@ -53,6 +53,7 @@ KEY_WORDS_ALL = {**ENTITIES_FULL_NAME,  **PARAMETERS_DICT} # ALL KEYWORDS TO BE 
 PARAMETERS_DICT_KEYS = PARAMETERS_DICT.keys()
 ACTIONS_DEFAULT_KEYS = ACTIONS_DEFAULT.keys()
 
+# TODO : the similarity func is very time-taking, we must shorten the process time or find another way
 
 def findIndexMainSubject(processed_entry : Doc, dictioIndexKeyWords : dict, indexAction : int, indexMainEntity : int = None) -> int :
     """
@@ -304,8 +305,12 @@ def name(processed_entry : Doc,
          indexesMain : dict,
          EXISTING_ENTITY_NAMES : dict,
          searchRawEnabled : bool = False) -> (dict,dict,list) :
+    """
+    According to the sentence and the existing file, assign names to the entitites mentionned
+    """
 
-    def isName(token : Token) -> bool :
+    def isName(token : Token) -> bool : 
+        # Check if a work matches the criteria of an entity name
         if (token.is_upper
             or not token.has_vector
             or (token.pos_ in ["NOUN","PROPN","PUNCT","X"] and token.text != ",")
@@ -314,7 +319,8 @@ def name(processed_entry : Doc,
             return True
         return False
 
-    def findClose(processed_entry : Doc, index : int) -> (int|None) :
+    def findClose(processed_entry : Doc, index : int) -> (int|None) : 
+        # Look for a name right beside the entity
         if (index +1 <= len(processed_entry)-1 
             and isName(processed_entry[index+1])
             and index+1 not in newTakenIndexes) :
@@ -326,11 +332,13 @@ def name(processed_entry : Doc,
         return None
 
     def findFullName(processed_entry : Doc, index : int, towardsRight : bool = True) :
+        # If a part of a name is found, the function rebuilt the full name (split in several tokens, beside the original one)
         fullNameIndexes = []
 
         indexJump = 1 if towardsRight else -1
         currentIndex = index
         isNameFinished = False
+        # We go across all tokens making the whole name until we find a word not matching the criteria
         while not isNameFinished :
             if currentIndex in newTakenIndexes : 
                 isNameFinished = True
@@ -341,7 +349,7 @@ def name(processed_entry : Doc,
                 fullNameIndexes.append(currentIndex)
             elif isName(currentToken) or currentToken.pos_ == "NUM" :
                 # the method findFullName is called if the token pass the isName method. 
-                # So the 2nd condition is correct as it will only test the following tokens
+                # So the 2nd condition can be put here as it will only test the following tokens (making the whole name)
                 fullNameIndexes.append(currentIndex)
             else :
                 isNameFinished = True
@@ -353,7 +361,8 @@ def name(processed_entry : Doc,
 
         return fullNameIndexes
 
-    def findAttachedEntity(processed_entry : Doc, index : int) -> (int|None) : 
+    def findAttachedEntity(processed_entry : Doc, index : int) -> (int|None) :
+        # Find the entity attached to the name, thanks to its dependencies
         counter = 0
         for token in processed_entry[index].ancestors :
             if counter == 3 :
@@ -365,41 +374,47 @@ def name(processed_entry : Doc,
             counter += 1
         return None
 
-    IMPLICIT = ["current","main"]
+    IMPLICIT = ["current","main"] # TODO : understand "in the main building" or similar
 
-    newDictEntities = dictioEntities
+    newDictEntities = dictioEntities # extended dict in which we add entities mentionned without the keyword ("building" e.g.)
     newDictioNameIndexes = dictioNameIndexes # dict with entityIndex : NameOfTheEntityIndex
     newTakenIndexes = takenIndexes
 
-    if len(newDictioNameIndexes) < len(dictioEntities) : # if not all names found
-        # begin with the synonyms of "called"
+    if len(newDictioNameIndexes) < len(dictioEntities) : 
+        # if not all names found : this condition is mandatory, especially since the name function is called twice
+
         for nameSynonymIndex in listNameSynonyms :
+            # begin with the synonyms of "called"
             currentToken = processed_entry[nameSynonymIndex]
             attachedEntityIndex = findAttachedEntity(processed_entry, nameSynonymIndex)
             attachedValueIndexes = []
 
             if attachedEntityIndex == None or attachedEntityIndex in newDictioNameIndexes.keys() :
+                # if one of these conditions is verified, the entity would have already be identified in the first call of the function
                 continue
 
             if (currentToken.similarity(nlp("called")[0]) > SIMILARITY_THRESHOLD # if "called", check right next to the token
                 and currentToken.i < len(processed_entry)-1
                 and currentToken.i+1 not in newTakenIndexes
-                # and currentToken.is_ancestor(processed_entry[currentToken.i +1])
+                # and currentToken.is_ancestor(processed_entry[currentToken.i +1]) ?
                 and isName(processed_entry[currentToken.i +1])) :
                     attachedValueIndexes.extend(findFullName(processed_entry, currentToken.i +1))
 
             if len(list(currentToken.children)) != 0  and (not attachedValueIndexes) :
+                # if name not found right beside the "called" token, we look into its right children
                 for token in currentToken.rights :
                     if isName(token) and token.i not in newTakenIndexes :
                         attachedValueIndexes.extend(findFullName(processed_entry, token.i))
                         break
                 if not attachedValueIndexes :
+                    # if still not found, look into its left children
                     for token in list(currentToken.lefts)[::-1] :
                         if isName(token) and token.i not in newTakenIndexes :
                             attachedValueIndexes.extend(findFullName(processed_entry, token.i)) # we choose the rightmost
                             break 
 
             if len(list(currentToken.ancestors)) != 0 and not attachedValueIndexes :
+                # if name not found yet, look into its ancestors 
                 counter = 0
                 for token in currentToken.ancestors :
                     if counter == 2 :
@@ -409,13 +424,15 @@ def name(processed_entry : Doc,
                         break
                     else : counter += 1
                 
-            if attachedValueIndexes and all([x not in newDictioNameIndexes.values() for x in attachedValueIndexes]) :          
+            if attachedValueIndexes and all([x not in newDictioNameIndexes.values() for x in attachedValueIndexes]) :
+                # if a name is found and is not already identified, we add it         
                 newDictioNameIndexes[attachedEntityIndex] = attachedValueIndexes
                 newTakenIndexes.extend(attachedValueIndexes)
 
-    if len(newDictioNameIndexes) < len(dictioEntities) : # if not all names found
+    if len(newDictioNameIndexes) < len(dictioEntities) : 
+        # if not all names found
 
-        # if the name if right beside the entity
+        # if the name if right beside the entity (without "called")
         for entityIndex,_ in dictioEntities.items() :
             if entityIndex in newDictioNameIndexes.keys() :
                 continue
@@ -424,9 +441,11 @@ def name(processed_entry : Doc,
                 newDictioNameIndexes[entityIndex] = attachedValueIndexes
                 newTakenIndexes.extend(attachedValueIndexes)
 
-    if len(newDictioNameIndexes) < len(dictioEntities) : # if not all names found
+    if len(newDictioNameIndexes) < len(dictioEntities) : 
+        # if not all names found
         
-        for token in processed_entry : # look directly for a name
+        for token in processed_entry : 
+            # look directly for a name, and see if it is attached to an known entity
 
             if token.i not in newTakenIndexes and isName(token) :
                 indexAttachedEntity = findAttachedEntity(processed_entry, token.i)
@@ -439,6 +458,7 @@ def name(processed_entry : Doc,
 
     if searchRawEnabled :
         # we seek here existing names specified without the type of entity (e.g. create a rack in R1)
+        # the goal is to identify entities not detected yet (as there is no entity keyword attached to it)
 
         for token in processed_entry : # look directly for a name
 
@@ -448,26 +468,23 @@ def name(processed_entry : Doc,
                 if stringName[0] == "/" : stringName = stringName[1:]
                 for fullName, entity in EXISTING_ENTITY_NAMES.items() :
                     match = re.findall(f"[-/\w]*/{stringName}$", fullName)
-                    # TODO : préférer le dernier match
+                    # TODO : prefer the last match (findall returns a list)
                     if match :
                         newDictioNameIndexes[attachedValueIndexes[0]] = attachedValueIndexes
                         newDictEntities[attachedValueIndexes[0]] = entity
                         newTakenIndexes.extend(attachedValueIndexes)
 
-        
-    # TODO : get current names
-
-    # TODO : check for implicit words now
+    # TODO : check for implicit words now, listed above -> use methods from scrapping.py
     
     return newDictioNameIndexes, newDictEntities, newTakenIndexes
 
-# TODO : remove dictioEntityNames as parameter and change the function
 def associateParameters(processed_entry : Doc, KEY_WORDS_ENTRY : dict, dictEntities : dict, dictioEntityNames : dict) -> dict :
     """
     Associate the index of all parameters to the entity
     """
-    SPECIAL_KEY_WORD = ["for", "to"]
+    # TODO : remove dictioEntityNames as parameter and change the function
 
+    SPECIAL_KEY_WORD = ["for", "to"]
     association = {}
 
     # If only one entity is detected, all parameters are associated to it
@@ -502,8 +519,8 @@ def associateParameters(processed_entry : Doc, KEY_WORDS_ENTRY : dict, dictEntit
                             association[index] = (ancestor.i, keyword)
                             break
 
-            # If the number of name is lower than the number of entity
             else:
+            # If the number of name is lower than the number of entity
 
                 # The entity is searched in the ancestors for the name
                 if keyword == "name":
@@ -600,7 +617,7 @@ def slashInName(parentName : str, partialName : str, EXISTING_ENTITY_NAMES : dic
 
 def buildFullName(dictioEntityNames : dict, dictEntities : dict, finalRelations : dict, entityIndex : int, EXISTING_ENTITY_NAMES : dict, actionType : str) -> str :
     """
-    Build the full name of the entity specified
+    Build the full name (from the start : "/P/...") of the entity specified
     """
     
     # Start with the partial name : the name of the entity specified
@@ -729,61 +746,82 @@ def buildFullName(dictioEntityNames : dict, dictEntities : dict, finalRelations 
     return partialName
 
 def getKeyWords(processed_entry : Doc) -> dict :
-    ENTITIES_FULL_NAME = {"entity" : list(wiki.ENTITIES.keys())}
+    """
+    Get all keywords in the given sentence, according to the keywords defined in the dicts above
+    """
+
+    ENTITIES_FULL_NAME = {"entity" : list(wiki.ENTITIES.keys())} # all the entites are under the "entity" keyword name
     KEY_WORDS_ALL = {**ENTITIES_FULL_NAME,  **PARAMETERS_DICT}
 
     KEY_WORDS_ENTRY = {}
     # we detect key words in the sentence given and put them into KEY_WORDS_ENTRY
     lastParameter = None, None
+
     for index,token in enumerate(processed_entry) :
-        # print(KEY_WORDS_ENTRY, lastParameter)
-        matching_list = [] # list of tuples with the similarity score and type of key word (for each key word)
+        matching_list = [] 
+        # list of tuples with the similarity score (between 0 and 1) and type of key word (for each key word)
+
         if token.pos_ == "VERB" and str(token) == token.lemma_ and token.head == token : # 2nd test : if infinitive verb
-            for parameter in ACTIONS_DEFAULT_KEYS :
-                if token.lower_ in ACTIONS_DEFAULT[parameter] :
-                    matching_list.append((1,parameter))
+            # this test is first to avoid properties being considered as verbs (like "name" etc)
+            for actionKeyword in ACTIONS_DEFAULT_KEYS :
+                if token.lower_ in ACTIONS_DEFAULT[actionKeyword] :
+                    # if the exact word is in the keywords list, the similarity given is 1
+                    matching_list.append((1,actionKeyword))
                 else :
-                    similarity = max([token.similarity(nlp(word)[0]) for word in ACTIONS_DEFAULT[parameter]])
-                    matching_list.append((similarity,parameter))
+                    similarity = max([token.similarity(nlp(word)[0]) for word in ACTIONS_DEFAULT[actionKeyword]])
+                    # we take the max similarity score over all words related to the keyword
+                    matching_list.append((similarity,actionKeyword))
         else :
-            for parameter in KEY_WORDS_ALL.keys() :
-                if token.lower_ in KEY_WORDS_ALL[parameter] :
-                    matching_list.append((1,parameter))
+            for keyword in KEY_WORDS_ALL.keys() :
+                if token.lower_ in KEY_WORDS_ALL[keyword] :
+                    matching_list.append((1,keyword))
                 elif token.pos_ in ["NOUN","ADP","VERB"] :
-                    similarity = max([token.similarity(nlp(word)[0]) for word in KEY_WORDS_ALL[parameter]])
-                    matching_list.append((similarity,parameter))
+                    # this test allows excluding all the "stop words"
+                    # we do not directly test with "is_stop" as keywods such as "at" exist
+                    similarity = max([token.similarity(nlp(word)[0]) for word in KEY_WORDS_ALL[keyword]])
+                    matching_list.append((similarity,keyword))
         
         if not matching_list :
             continue
 
-        match = max(matching_list)
+        match = max(matching_list) # we only keep the highest similarity score
 
-        # if "called" or a synonym is used for a parameter and not for an entity
         if match[1] == "name" and lastParameter[0] and (lastParameter[0] == token.head.i or processed_entry[lastParameter[0]] in token.children) :
+            # if "called" or a synonym is used for a parameter and not for an entity (e.g. "template called intel640")
             continue
         if match[1] == lastParameter[1] and match[1] not in ["name","position"] :
+            # there should not be two same parameters in a row, except for a few ones
             continue
         if match[0] > SIMILARITY_THRESHOLD :
-            # if is considered a key word, is added to the dict
+            # if is considered a key word (must exceed the threshold), is added to the dict
             if match[1] == "entity" and match[0] != 1 :
+                # if an entity is not correctly wrote, we don't take any risk : we pass
                 continue
+
+            """
+            TODO : handle the position example : "build a rack 1.1m from the left wall"
             if (match[1] == "position" 
-            and match[1] == lastParameter[1] 
-            and processed_entry[index].lower_ == "from"
-            and processed_entry[lastParameter[0]].lower_ != "from") :
+                and match[1] == lastParameter[1] 
+                and processed_entry[index].lower_ == "from"
+                and processed_entry[lastParameter[0]].lower_ != "from") :
                 continue
+            """
+
+            # the token is then added to the dict
             KEY_WORDS_ENTRY[index] = match[1] 
             if match[1] in PARAMETERS_DICT_KEYS :
                 lastParameter = (index,match[1])
 
     return KEY_WORDS_ENTRY
 
-# TODO : the similarity func is very time-taking, we must shorten the process time or find another way
-
 def NL_to_OCLI(ocliFile : str) -> str :
-    importlib.reload(wiki)
+    """
+    The only function launched at the start. Asks for input and calls the other required functions
+    """
+    
+    importlib.reload(wiki) # only for tests
     FINAL_INSTRUCTION = ""
-    TAKEN_INDEXES = []
+    TAKEN_INDEXES = [] # all the indexes already used somewhere (keywords, value...) -> to not be assigned to multiple things by error
 
     EXISTING_ENTITY_NAMES = scrapping.scrapAllName(ocliFile)
 
@@ -796,14 +834,15 @@ def NL_to_OCLI(ocliFile : str) -> str :
 
     dictEntities = {index : processed_entry[index].text for index,keyword in KEY_WORDS_ENTRY.items() if keyword == "entity"}
 
-    dictioNameIndexes, dictEntities, TAKEN_INDEXES = name(processed_entry,
-                                                            dictEntities,
-                                                            {},
-                                                            [index for index,parameter in KEY_WORDS_ENTRY.items() if parameter == "name"],
-                                                            TAKEN_INDEXES,
-                                                            {},
-                                                            EXISTING_ENTITY_NAMES,
-                                                            True)
+    dictioNameIndexes, dictEntities, TAKEN_INDEXES = name(processed_entry = processed_entry,
+                                                            dictioEntities = dictEntities,
+                                                            dictioNameIndexes = {},
+                                                            listNameSynonyms = [index for index,parameter in KEY_WORDS_ENTRY.items() if parameter == "name"],
+                                                            takenIndexes = TAKEN_INDEXES,
+                                                            indexesMain = {},
+                                                            EXISTING_ENTITY_NAMES = EXISTING_ENTITY_NAMES,
+                                                            searchRawEnabled = True)
+    # this call, with searchRaw enabled, is mainly to identify non specified entities (e.g. "place in ROOM1 the rack ..." -> there is no "room" keyword)
 
     # test detection
     list_key_param = list(KEY_WORDS_ENTRY.values())
@@ -812,13 +851,14 @@ def NL_to_OCLI(ocliFile : str) -> str :
         count_action += list_key_param.count(action_type)
 
     if count_action != 1 :
+        # there should be only one action per sentence given
         raise Exception("Action not detected")
     
     # TODO : check entities
     # if no entity mentionned : must be alteration
     # if no entity and color, seek for keyword reserved etc besides the color
 
-    # if no entity :check the ocli file
+    # if no entity : check the ocli file
     indexAction= [index for index,keyword in KEY_WORDS_ENTRY.items() if keyword in ACTIONS_DEFAULT_KEYS][0]
     finalRelations = findRelations(processed_entry, dictEntities, indexAction)
     print("relations : ", finalRelations)
@@ -829,45 +869,54 @@ def NL_to_OCLI(ocliFile : str) -> str :
                     "entity" : INDEX_MAIN_ENTITY}
     print("INDEXES_MAIN : ", INDEXES_MAIN)
 
-    dictioNameIndexes, dictEntities, TAKEN_INDEXES = name(processed_entry,
-                                                            dictEntities,
-                                                            dictioNameIndexes,
-                                                            [index for index,parameter in KEY_WORDS_ENTRY.items() if parameter == "name"],
-                                                            TAKEN_INDEXES,
-                                                            INDEXES_MAIN,
-                                                            EXISTING_ENTITY_NAMES,
-                                                            False)
+    # now that the main purpose of the sentence is identified, we call name back to find all remaining entities without name
+    dictioNameIndexes, dictEntities, TAKEN_INDEXES = name(processed_entry = processed_entry,
+                                                            dictioEntities = dictEntities,
+                                                            dictioNameIndexes = dictioNameIndexes,
+                                                            listNameSynonyms = [index for index,parameter in KEY_WORDS_ENTRY.items() if parameter == "name"],
+                                                            takenIndexes = TAKEN_INDEXES,
+                                                            indexesMain = INDEXES_MAIN,
+                                                            EXISTING_ENTITY_NAMES = EXISTING_ENTITY_NAMES,
+                                                            searchRawEnabled = False)
     
     dictioEntityNames = {}
+    # we build the names from the related indexes
     for entityIndex, valueIndexes in dictioNameIndexes.items() :
         stringName = "".join([processed_entry[index].text for index in valueIndexes])
         if stringName[-1] in ["/","\\"] : stringName = stringName[:-1]
         dictioEntityNames[entityIndex] = stringName
-    # print("dictioNameIndexes : ", dictioNameIndexes)
     print("dictioEntityNames : ",dictioEntityNames)
     print("dictEntities : ", dictEntities)
 
-    if not INDEXES_MAIN["entity"] in dictioEntityNames.keys():
+    if not INDEXES_MAIN["entity"] in dictioEntityNames.keys() :
         dictioEntityNames[INDEXES_MAIN["entity"]] = scrapping.createDefaultName(dictEntities[INDEXES_MAIN["entity"]], EXISTING_ENTITY_NAMES)
     
     association = associateParameters(processed_entry, KEY_WORDS_ENTRY, dictEntities, dictioEntityNames)
     print("association : ", association)
 
-    fullName = buildFullName(dictioEntityNames, dictEntities, finalRelations, INDEX_MAIN_ENTITY, EXISTING_ENTITY_NAMES, KEY_WORDS_ENTRY[INDEXES_MAIN["action"]])
+    fullName = buildFullName(dictioEntityNames = dictioEntityNames, 
+                             dictEntities = dictEntities, 
+                             finalRelations = finalRelations, 
+                             entityIndex = INDEX_MAIN_ENTITY, 
+                             EXISTING_ENTITY_NAMES = EXISTING_ENTITY_NAMES, 
+                             actionType = KEY_WORDS_ENTRY[INDEXES_MAIN["action"]])
     print("fullname : ", fullName)
     if fullName == None:
         raise ValueError("Not all the parent tree is known to name the object.")
     
+    # Now time to switch cases depending on the entry
     if (INDEXES_MAIN["subject"] in KEY_WORDS_ENTRY.keys() 
         and INDEXES_MAIN["subject"] == INDEXES_MAIN["entity"]) :
-        # we do the processes related to each parameter
+        # if the main subject is an entity
 
         if KEY_WORDS_ENTRY[INDEXES_MAIN["action"]] == "ACTION_POSITIVE" :
+            # if it's asked to create a new entity
             if fullName in EXISTING_ENTITY_NAMES.keys():
                 raise ValueError(f'This {dictEntities[INDEXES_MAIN["subject"]]} already exists.')
             
             dictioEntityParameters = {}
             listGivenParameters = []
+            # we make the list of all parameters attached to the entity
             for index,(entityIndex, parameterName) in association.items() :
                 if entityIndex == INDEXES_MAIN["subject"] :
                     listGivenParameters.append(parameterName)
@@ -880,24 +929,26 @@ def NL_to_OCLI(ocliFile : str) -> str :
             dictioEntityParameters["name"] = fullName.upper()
             allEntryItemsList = list(KEY_WORDS_ENTRY.items())
 
-            for counter,(index,parameterName) in enumerate(allEntryItemsList) :
-                if ((not parameterName in PARAMETERS_DICT_KEYS) 
+            # get the parameter value for all parameters linked to the entity
+            for counter,(keywordIndex,parameterName) in enumerate(allEntryItemsList) :
+                if ((parameterName not in PARAMETERS_DICT_KEYS) 
                     or parameterName not in dictioEntityParameters.keys()
                     or dictioEntityParameters[parameterName]
-                    or association[index][0] != INDEXES_MAIN["subject"]) :
+                    or association[keywordIndex][0] != INDEXES_MAIN["subject"]) :
                     continue
                 lastKeyWordIndex = 0 if counter == 0 else allEntryItemsList[counter-1][0]
                 nextKeyWordIndex = len(processed_entry) if counter == len(allEntryItemsList)-1 else allEntryItemsList[counter+1][0]
                 # get the parameter value
-                parameterValue, parameterIndex = get.FUNCTIONS[parameterName](processed_entry, 
-                                                                            index, 
-                                                                            dictEntities[association[index][0]], 
-                                                                            lastKeyWordIndex, 
-                                                                            nextKeyWordIndex, 
-                                                                            TAKEN_INDEXES)
-                TAKEN_INDEXES.extend(parameterIndex)
+                parameterValue, parameterIndexes = get.FUNCTIONS[parameterName](processed_entry = processed_entry, 
+                                                                            index = keywordIndex, 
+                                                                            attachedEntity = dictEntities[association[keywordIndex][0]], 
+                                                                            lastKeyWordIndex = lastKeyWordIndex, 
+                                                                            nextKeyWordIndex = nextKeyWordIndex, 
+                                                                            forbiddenIndexes = TAKEN_INDEXES)
+                TAKEN_INDEXES.extend(parameterIndexes)
                 dictioEntityParameters[parameterName] = parameterValue # store the value
 
+            # if some parameters don't have a given value, we take the default value if available
             for parameterName, value in dictioEntityParameters.items() :
                 if value == None and dictEntities[INDEXES_MAIN["entity"]] in wiki.DEFAULT_VALUE.keys() and parameterName in wiki.DEFAULT_VALUE[dictEntities[INDEXES_MAIN["entity"]]] :
                     dictioEntityParameters[parameterName] = wiki.DEFAULT_VALUE[dictEntities[INDEXES_MAIN["entity"]]][parameterName]
@@ -908,35 +959,43 @@ def NL_to_OCLI(ocliFile : str) -> str :
         elif KEY_WORDS_ENTRY[INDEXES_MAIN["action"]] == "ACTION_NEGATIVE" :
             FINAL_INSTRUCTION = tools.delete("", {"name" : fullName})
         
-        else:
+        else :
             raise NotImplementedError("The action '"+KEY_WORDS_ENTRY[INDEXES_MAIN["action"]]+"' has not been implemented for '"+KEY_WORDS_ENTRY[INDEXES_MAIN["subject"]]+"' as main subject")
 
-    else:
+    else : # (if the main subject is a parameter)
+
         # TODO : if parameter is "name"
+
         if KEY_WORDS_ENTRY[INDEXES_MAIN["action"]] == "ACTION_POSITIVE" :
+
             allEntryItemsList = list(KEY_WORDS_ENTRY.items())
-            for counter,(index,parameterName) in enumerate(allEntryItemsList) :
-                if (not parameterName in PARAMETERS_DICT_KEYS) or parameterName == "name": # or association[index][0] != INDEX_MAIN_ENTITY
+            for counter,(keywordIndex,parameterName) in enumerate(allEntryItemsList) :
+
+                if (not parameterName in PARAMETERS_DICT_KEYS) or parameterName == "name": # or association[keywordIndex][0] != INDEX_MAIN_ENTITY
                     continue
+
                 lastKeyWordIndex = 0 if counter == 0 else allEntryItemsList[counter-1][0]
                 nextKeyWordIndex = len(processed_entry) if counter == len(allEntryItemsList)-1 else allEntryItemsList[counter+1][0]
                 # get the parameter value
-                parameterValue, parameterIndexes = get.FUNCTIONS[parameterName](processed_entry,
-                                                                          index, 
-                                                                          dictEntities[association[index][0]], 
-                                                                          lastKeyWordIndex, 
-                                                                          nextKeyWordIndex, 
-                                                                          TAKEN_INDEXES)
+                parameterValue, parameterIndexes = get.FUNCTIONS[parameterName](processed_entry = processed_entry,
+                                                                                index = keywordIndex, 
+                                                                                attachedEntity = dictEntities[association[keywordIndex][0]], 
+                                                                                lastKeyWordIndex = lastKeyWordIndex, 
+                                                                                nextKeyWordIndex = nextKeyWordIndex, 
+                                                                                forbiddenIndexes = TAKEN_INDEXES)
                 TAKEN_INDEXES.extend(parameterIndexes)
-                fullName = buildFullName(dictioEntityNames, dictEntities, finalRelations, association[index][0], EXISTING_ENTITY_NAMES, KEY_WORDS_ENTRY[INDEXES_MAIN["action"]])
+                fullName = buildFullName(dictioEntityNames, dictEntities, finalRelations, association[keywordIndex][0], EXISTING_ENTITY_NAMES, KEY_WORDS_ENTRY[INDEXES_MAIN["action"]])
                 if fullName == None:
                     raise ValueError("Not all the parent tree is known to name the object.")
+                
+                # TODO : we should only create attribute for parameters directly linked to the main action
                 FINAL_INSTRUCTION += tools.createAttribute(fullName, parameterName, parameterValue) + "\n"
 
         elif KEY_WORDS_ENTRY[INDEXES_MAIN["action"]] == "ALTERATION" :
             # REQUIRES : the full name, the parameter and its value
             if not fullName in EXISTING_ENTITY_NAMES.keys() :
                 raise ValueError(f"This {dictEntities[INDEX_MAIN_ENTITY]} doesn't exist.")
+            
             parameterName = None
             attachedEntityIndex = None
             # then we take the more relevant/right attachedEntity
@@ -954,8 +1013,11 @@ def NL_to_OCLI(ocliFile : str) -> str :
             fullName = buildFullName(dictioEntityNames, dictEntities, finalRelations, attachedEntityIndex, EXISTING_ENTITY_NAMES, KEY_WORDS_ENTRY[INDEXES_MAIN["action"]])
             if fullName == None:
                 raise ValueError("Not all the parent tree is known to name the object.")
+            
             if INDEXES_MAIN["subject"] not in KEY_WORDS_ENTRY.keys() : parameterName = processed_entry[INDEXES_MAIN["subject"]]
+            
             if INDEXES_MAIN["subject"] in KEY_WORDS_ENTRY.keys() and KEY_WORDS_ENTRY[INDEXES_MAIN["subject"]] == "name":
+                # if a name is changed, we build the new full name
                 currentNameSplit = fullName.split("/")[1:]
                 if parameterValue[0] != "/":
                     parameterValue = "/" + parameterValue
@@ -972,13 +1034,15 @@ def NL_to_OCLI(ocliFile : str) -> str :
         else:
             raise NotImplementedError("The action '"+KEY_WORDS_ENTRY[INDEXES_MAIN["action"]]+"' has not been implemented for '"+KEY_WORDS_ENTRY[INDEXES_MAIN["subject"]]+"' as main subject")
     
-    # if seeking the name for the main entity, pass the indexaction as parameter
+    # TODO
+    # if seeking the name for the main entity, pass the indexAction as parameter
     # if no name found, check the type of action : if +, a name is needed, otherwise not necessarily
 
     # check if parameters were not given
     print("FINAL_INSTRUCTION : ", FINAL_INSTRUCTION)
     return FINAL_INSTRUCTION
 
+# automatically runs the file
 if __name__ == "__main__":
 
     init.main()
